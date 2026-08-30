@@ -8,7 +8,7 @@
 <body style="margin:0;font-family:system-ui;background:#1c332c;color:#f4efe6;padding:24px">
 <p>Opening Posh Manager…</p>
 <script>
-var V="20260830N";
+var V="20260830P";
 function addScript(src,next){
   var s=document.createElement("script");
   s.src=src+"?v="+V;
@@ -23,7 +23,7 @@ fetch("app.html?v="+V,{cache:"no-store"}).then(function(r){
   document.open();
   document.write(html);
   document.close();
-  addScript("desk.js",function(){addScript("loss.js");});
+  addScript("desk.js",function(){addScript("loss.js",function(){addScript("fixtures.js");});});
 }).catch(function(){
   document.body.innerHTML="<p>Could not load. <a href='app.html' style='color:#c4a574'>Open app.html</a></p>";
 });
