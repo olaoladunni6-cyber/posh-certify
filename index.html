@@ -1,0 +1,18 @@
+<!DOCTYPE html><html lang=en-NG><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=theme-color content=#1c332c><title>Posh Certify</title><style>body{margin:0;font-family:system-ui,sans-serif;background:#1c332c;color:#f4efe6;max-width:480px;margin:0 auto}h1{font-family:Georgia,serif}button{width:100%;text-align:left;padding:12px;margin:8px 0;border-radius:12px;border:0;background:#fff;color:#101512}.wrap{padding:24px}.ok{background:#dcebe3;color:#215c3a;padding:10px;border-radius:10px}</style></head><body><div class=wrap id=app></div><script>
+const USERS=[{id:'sophia',name:'Sophia Adeyemi',role:'manager',title:'Duty Manager'},{id:'blessing',name:'Blessing Okoro',role:'housekeeper',title:'Ikeja'},{id:'tunde',name:'Tunde Balogun',role:'housekeeper',title:'Victoria Island'}];
+const SEED=[{n:'201',s:'Ikeja',t:'Deluxe King',hk:'blessing',st:'pending'},{n:'204',s:'Ikeja',t:'Deluxe Twin',hk:'blessing',st:'pending'},{n:'501',s:'Victoria Island',t:'Executive King',hk:'tunde',st:'pending'},{n:'510',s:'Victoria Island',t:'Junior Suite',hk:'tunde',st:'submitted'}];
+let user=null,rooms=JSON.parse(localStorage.getItem('pc')||'null')||SEED.map(r=>({...r,note:''}));
+function save(){localStorage.setItem('pc',JSON.stringify(rooms));}
+function render(){
+ const el=document.getElementById('app');
+ if(!user){
+  el.innerHTML='<p class=ok>Hosted app · Posh Hotels & Suites Nigeria</p><h1>Posh Certify</h1><p>Tap your name. Work saves in this phone browser.</p>'+USERS.map(u=>`<button onclick='login(${JSON.stringify(u)})'><b>${u.name}</b><br>${u.title}</button>`).join('');
+  return;
+ }
+ const list=user.role==='manager'?rooms:rooms.filter(r=>r.hk===user.id);
+ el.innerHTML=`<p class=ok>${user.name} · hosted</p><h1>Rooms</h1>`+list.map((r,i)=>`<div style="background:#fff;color:#111;padding:12px;border-radius:12px;margin:8px 0"><b>${r.n}</b> ${r.t}<br>${r.s} · ${r.st}<br><button onclick="setSt(${i},'submitted')">Send to manager</button> ${user.role==='manager'?`<button onclick=\"setSt(${i},'certified')\">Certify</button>`:''}</div>`).join('')+`<button onclick=\"user=null;render()\">Sign out</button>`;
+}
+function login(u){user=u;render();}
+function setSt(i,st){rooms[i].st=st;save();render();}
+render();
+</script></body></html>
