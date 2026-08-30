@@ -3,14 +3,9 @@ if(typeof db==="undefined")return;
 if(!db.fxPar)db.fxPar={};
 if(!db.fixtures)db.fixtures=[];
 function fxList(){return db.fixtures||[];}
-function roomTypes(){
-  var t={};
-  (db.rooms||[]).forEach(function(r){if(r.type)t[r.type]=1;});
-  ["Deluxe King","Executive King","Standard"].forEach(function(x){t[x]=1;});
-  return Object.keys(t);
-}
-function fxExpected(type,id){
-  var row=(db.fxPar||{})[type]||{};
+function roomKey(r){return String((r&&r.number)!=null?r.number:r);}
+function fxExpected(roomNo,id){
+  var row=(db.fxPar||{})[String(roomNo)]||{};
   if(row[id]!=null&&String(row[id])!=="")return Number(row[id]||0);
   var it=fxList().filter(function(x){return x.id===id;})[0];
   return Number(it&&it.par!=null?it.par:0);
@@ -18,9 +13,9 @@ function fxExpected(type,id){
 function fxActual(r,id){
   if(r.fixtureActual&&r.fixtureActual[id]!=null&&String(r.fixtureActual[id])!=="")
     return Number(r.fixtureActual[id]||0);
-  return Math.max(0,fxExpected(r.type,id)-Number((r.fixtureMiss||{})[id]||0));
+  return Math.max(0,fxExpected(r.number,id)-Number((r.fixtureMiss||{})[id]||0));
 }
-function fxShort(r,id){return Math.max(0,fxExpected(r.type,id)-fxActual(r,id));}
+function fxShort(r,id){return Math.max(0,fxExpected(r.number,id)-fxActual(r,id));}
 fixtureMiss=function(r){return fxList().reduce(function(n,it){return n+fxShort(r,it.id);},0);};
 function staffEditor(){
   var people=(db.users||[]).map(function(u){
@@ -29,14 +24,14 @@ function staffEditor(){
   return "<h1>Staff</h1>"+people+"<div class=card><h3>Add staff</h3><input id=sn placeholder='Name'>"+roleSel("sr","housekeeper")+locSel("ss","Ikeja")+"<input id=sp placeholder='PIN'><button class=btn id=addStaff>Save staff</button></div>";
 }
 viewFixtures=function(){
-  var types=roomTypes();
-  var rows=fxList().map(function(it){
-    var cells=types.map(function(t){
-      return "<p><b>"+t+"</b> — expected <input class=fxpt type=number min=0 data-type='"+t+"' data-item='"+it.id+"' value='"+fxExpected(t,it.id)+"'></p>";
+  var rooms=(db.rooms||[]).slice().sort(function(a,b){return String(a.number).localeCompare(String(b.number),undefined,{numeric:true});});
+  var rows=rooms.map(function(r){
+    var cells=fxList().map(function(it){
+      return "<p>"+it.name+" — expected <input class=fxpt type=number min=0 data-room='"+r.number+"' data-item='"+it.id+"' value='"+fxExpected(r.number,it.id)+"'></p>";
     }).join("");
-    return "<div class=card><h3>"+it.name+"</h3>"+cells+"<button class='btn saveFxPar' data-id='"+it.id+"'>Save "+it.name+" by room type</button></div>";
+    return "<div class=card><h3>Room "+r.number+(r.site?" · "+r.site:"")+(r.type?" · "+r.type:"")+"</h3>"+cells+"<button class='btn saveFxPar' data-room='"+r.number+"'>Save Room "+r.number+"</button></div>";
   }).join("");
-  return "<h1>Fixture expected by room type</h1><div class=ok>Set how many of each item belong in Deluxe King, Executive King and Standard. Housekeeper then enters the actual count in that room.</div>"+rows+"<div class=card><h3>Add fixture</h3><input id=fxname placeholder='e.g. Wine glass'><input id=fxpar type=number min=0 value=1><button class=btn id=addFx>Save fixture</button></div>";
+  return "<h1>Fixture expected by room number</h1><div class=ok>Set how many of each item belong in each room. Housekeeper enters the actual count when cleaning that room. Missing = expected − actual.</div>"+(rows||"<p>Add rooms first.</p>")+"<div class=card><h3>Add fixture item</h3><input id=fxname placeholder='e.g. Wine glass'><input id=fxpar type=number min=0 value=1><button class=btn id=addFx>Save fixture</button></div>";
 };
 var _vsPrev=viewStaff;
 viewStaff=function(){
@@ -47,13 +42,13 @@ laundryBox=function(r){
   var can=user&&user.role==="housekeeper"&&r.hk===user.id&&r.job;
   var dailyItems=(typeof catalog==="function"?catalog():[]).filter(function(it){return it.cat==="Toiletries"||it.cat==="Towels"||it.cat==="Linen";});
   var fx=fxList().map(function(it){
-    var exp=fxExpected(r.type,it.id),short=fxShort(r,it.id);
+    var exp=fxExpected(r.number,it.id),short=fxShort(r,it.id);
     var shown=r.fixtureActual&&r.fixtureActual[it.id]!=null?r.fixtureActual[it.id]:"";
     var inp=can?"<input class=fa type=number min=0 data-item='"+it.id+"' value='"+shown+"' placeholder='Actual in this room'>":"<span class=qty>"+(shown===""?"not counted":("actual "+shown))+"</span>";
-    return "<p><b>"+it.name+"</b><br>This room is <b>"+(r.type||"no type")+"</b> so expected is <b>"+exp+"</b>"+(short?(" · <b>"+short+" missing</b>"):" · complete")+"<br>"+inp+"</p>";
+    return "<p><b>"+it.name+"</b><br>Room "+r.number+" expected <b>"+exp+"</b>"+(short?(" · <b>"+short+" missing</b>"):" · complete")+"<br>"+inp+"</p>";
   }).join("");
   var daily=dailyItems.map(function(it){var n=Number((r.missing||{})[it.id]||0);return "<div class=row><span>"+it.name+" · "+it.cat+"</span>"+(can?"<input class=q type=number min=0 data-item='"+it.id+"' value='"+(n||"")+"'>":"<span class=qty>"+n+"</span>")+"</div>";}).join("");
-  return "<div class=card><h3>Fixtures · "+(r.type||"set a room type")+"</h3>"+fx+"</div><div class=card><h3>Toiletries, towels and linen</h3>"+daily+(can?"<button class=btn id=lrep>Save counts</button>":"")+"</div>";
+  return "<div class=card><h3>Fixtures · Room "+r.number+"</h3>"+fx+"</div><div class=card><h3>Toiletries, towels and linen</h3>"+daily+(can?"<button class=btn id=lrep>Save counts</button>":"")+"</div>";
 };
 var _b2=bind;
 bind=function(){
@@ -61,15 +56,14 @@ bind=function(){
   document.querySelectorAll(".saveFxPar").forEach(function(b){
     b.onclick=function(){
       if(!user||user.role!=="superadmin")return;
-      var id=b.getAttribute("data-id");
+      var room=String(b.getAttribute("data-room"));
       if(!db.fxPar)db.fxPar={};
-      document.querySelectorAll(".fxpt[data-item='"+id+"']").forEach(function(inp){
-        var t=inp.getAttribute("data-type");
-        if(!db.fxPar[t])db.fxPar[t]={};
+      if(!db.fxPar[room])db.fxPar[room]={};
+      document.querySelectorAll(".fxpt[data-room='"+room+"']").forEach(function(inp){
         var n=parseInt(inp.value,10);
-        db.fxPar[t][id]=n>=0?n:0;
+        db.fxPar[room][inp.getAttribute("data-item")]=n>=0?n:0;
       });
-      save();alert("Saved expected by room type.");draw();
+      save();alert("Saved expected items for Room "+room+".");draw();
     };
   });
   var addFx=document.getElementById("addFx");
