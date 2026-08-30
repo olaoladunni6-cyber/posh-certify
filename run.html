@@ -3,17 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <title>Posh Manager</title>
 </head>
 <body style="margin:0;font-family:system-ui;background:#1c332c;color:#f4efe6;padding:24px">
 <p>Opening Posh Manager…</p>
 <script>
-fetch("app.html").then(function(r){return r.text();}).then(function(html){
+var V="20260830f";
+fetch("app.html?v="+V,{cache:"no-store"}).then(function(r){return r.text();}).then(function(html){
   document.open();
-  document.write(html.replace("</body>","<script src=\"desk.js\"><\/script></body>"));
+  document.write(html.replace("</body>","<script src=\"desk.js?v="+V+"\"><\\/script></body>"));
   document.close();
 }).catch(function(){
-  document.body.innerHTML="<p>Could not load. <a href='run.html' style='color:#c4a574'>Retry</a></p>";
+  document.body.innerHTML="<p>Could not load. <a href='run.html?v="+V+"' style='color:#c4a574'>Retry</a></p>";
 });
 </script>
 </body>
