@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en-NG">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>Posh Manager 31A</title>
+</head>
+<body style="margin:0;font-family:system-ui;background:#1c332c;color:#f4efe6;padding:24px">
+<p id=st>Clearing old phone cache…</p>
+<script>
+var V="20260831A";
+function go(){
+  document.getElementById("st").textContent="Opening Posh Manager 31A…";
+  function addScript(src,next){
+    var s=document.createElement("script");
+    s.src=src+"?v="+V+"&t="+Date.now();
+    s.onload=next||function(){};
+    s.onerror=next||function(){};
+    document.documentElement.appendChild(s);
+  }
+  fetch("app.html?v="+V+"&t="+Date.now(),{cache:"reload"}).then(function(r){
+    if(!r.ok)throw new Error(r.status);
+    return r.text();
+  }).then(function(html){
+    html=html.replace("<h1>Posh Certify</h1>","<h1>Posh Manager</h1><p>Build 31A</p>");
+    document.open();
+    document.write(html);
+    document.close();
+    addScript("desk.js",function(){addScript("loss.js",function(){addScript("fixtures.js");});});
+  }).catch(function(e){
+    document.body.innerHTML="<p>Could not load. "+e+"</p><p><a href='app.html' style='color:#c4a574'>Open app.html</a></p>";
+  });
+}
+if(navigator.serviceWorker){
+  navigator.serviceWorker.getRegistrations().then(function(list){
+    return Promise.all(list.map(function(r){return r.unregister();}));
+  }).then(function(){
+    if(window.caches)return caches.keys().then(function(keys){return Promise.all(keys.map(function(k){return caches.delete(k);}));});
+  }).then(go).catch(go);
+}else go();
+</script>
+</body>
+</html>
