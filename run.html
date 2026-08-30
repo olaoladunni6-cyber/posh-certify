@@ -6,14 +6,15 @@
 <title>Posh Certify</title>
 </head>
 <body style="margin:0;font-family:system-ui;background:#1c332c;color:#f4efe6;padding:24px">
-<p>Opening Posh Certify with Desk…</p>
+<p>Opening Posh Certify…</p>
 <script>
-fetch("index.html").then(function(r){return r.text();}).then(function(html){
+var CORE="https://cdn.jsdelivr.net/gh/olaoladunni6-cyber/posh-certify@bb2db1b41b8dcc03d0e1ca1d786d1cea9959628a/index.html";
+fetch(CORE).then(function(r){return r.text();}).then(function(html){
   document.open();
   document.write(html.replace("</body>","<script src=\"desk.js\"><\/script></body>"));
   document.close();
 }).catch(function(){
-  document.body.innerHTML="<p>Could not load app. Open <a href=\"index.html\" style=\"color:#c4a574\">the main app</a> instead.</p>";
+  document.body.innerHTML="<p>Could not load. <a href='run.html' style='color:#c4a574'>Retry</a></p>";
 });
 </script>
 </body>
