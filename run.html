@@ -8,8 +8,7 @@
 <body style="margin:0;font-family:system-ui;background:#1c332c;color:#f4efe6;padding:24px">
 <p>Opening Posh Certify…</p>
 <script>
-var CORE="https://cdn.jsdelivr.net/gh/olaoladunni6-cyber/posh-certify@bb2db1b41b8dcc03d0e1ca1d786d1cea9959628a/index.html";
-fetch(CORE).then(function(r){return r.text();}).then(function(html){
+fetch("app.html").then(function(r){return r.text();}).then(function(html){
   document.open();
   document.write(html.replace("</body>","<script src=\"desk.js\"><\/script></body>"));
   document.close();
