@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en-NG">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Posh Certify</title>
+</head>
+<body style="margin:0;font-family:system-ui;background:#1c332c;color:#f4efe6;padding:24px">
+<p>Opening Posh Certify with Desk…</p>
+<script>
+fetch("index.html").then(function(r){return r.text();}).then(function(html){
+  document.open();
+  document.write(html.replace("</body>","<script src=\"desk.js\"><\/script></body>"));
+  document.close();
+}).catch(function(){
+  document.body.innerHTML="<p>Could not load app. Open <a href=\"index.html\" style=\"color:#c4a574\">the main app</a> instead.</p>";
+});
+</script>
+</body>
+</html>
