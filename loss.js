@@ -67,6 +67,10 @@ function linenPack(scope){
   return {sent:sent,recv:recv,issued:issued,miss:miss,restock:restock,short:short,ids:Object.keys(ids)};
 }
 function lossPieces(p){return p.ids.reduce(function(n,id){return n+Number(p.miss[id]||0)+Number(p.short[id]||0)+Number(p.restock[id]||0);},0);}
+function viewBackup(){
+  if(!isSuper())return "";
+  return "<div class=card><h3>Backup hotel data</h3><p>Staff, rooms, sales and stock live in this browser only. Download after you add staff or rooms. Clearing cache wipes them.</p><button class=btn id=dlBak>Download backup</button><p>Restore from a saved file</p><input id=upBak type=file accept='application/json,.json'><button class='btn dark' id=doBak>Restore backup</button></div>";
+}
 function viewLinenLoss(){
   if(!(isLaundry()||mgr()||isGM()||isSuper()))return "";
   function table(title,scope){
@@ -111,7 +115,8 @@ viewSlips=function(){
 var _vs=viewStaff;
 viewStaff=function(){
   var html=_vs();
-  if(mgr()||isGM()||isSuper())return viewLinenInv()+viewLinenLoss()+html;
+  if(isSuper())return viewBackup()+viewLinenInv()+viewLinenLoss()+html;
+  if(mgr()||isGM())return viewLinenInv()+viewLinenLoss()+html;
   return html;
 };
 var _vb=viewBoard;
@@ -194,6 +199,32 @@ bind=function(){
       draw();
     };
   }
+  var dlBak=document.getElementById("dlBak");
+  if(dlBak)dlBak.onclick=function(){
+    if(!isSuper())return;
+    var blob=new Blob([JSON.stringify(db)],{type:"application/json"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="posh-manager-backup-"+today()+".json";
+    a.click();
+  };
+  var doBak=document.getElementById("doBak");
+  if(doBak)doBak.onclick=function(){
+    if(!isSuper())return;
+    var inp=document.getElementById("upBak");
+    var f=inp&&inp.files&&inp.files[0];
+    if(!f){alert("Choose the backup file first.");return;}
+    var rd=new FileReader();
+    rd.onload=function(){
+      try{
+        var x=JSON.parse(rd.result);
+        if(!x||!x.users||!x.rooms){alert("That file is not a Posh Manager backup.");return;}
+        if(!confirm("Replace staff and rooms on this phone with the backup?"))return;
+        db=x;save();location.reload();
+      }catch(e){alert("Could not read that file.");}
+    };
+    rd.readAsText(f);
+  };
   var sendL=document.getElementById("sendL");
   if(sendL){
     var prevSend=sendL.onclick;
