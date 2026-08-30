@@ -16,6 +16,34 @@ db.users.forEach(function(u){
 });
 try{save();}catch(e){}
 
+var _digits=digits;
+digits=function(s){
+  var d=_digits(s);
+  if(d.indexOf("234")===0)return d;
+  if(d.length===11&&d.charAt(0)==="0")return "234"+d.slice(1);
+  if(d.length===10)return "234"+d;
+  return d;
+};
+function waOk(n){return digits(n).length>=13;}
+function waLink(num,msg){return "https://wa.me/"+digits(num)+"?text="+encodeURIComponent(msg||"");}
+function openWa(num,msg){if(!waOk(num)){alert("Save a valid Nigerian WhatsApp first. Example: 0803 123 4567");return false;}window.open(waLink(num,msg),"_blank");return true;}
+var _pingMgrGm=pingMgrGm;
+pingMgrGm=function(msg){
+  var a=waDigits(),g=gmDigits();
+  if(!waOk(a)&&!waOk(g)){alert("No duty manager or CEO WhatsApp saved. Super Admin: Staff tab → Hotel WhatsApp, or put a number on the manager/CEO card.");return;}
+  if(waOk(a))openWa(a,msg);
+  setTimeout(function(){if(waOk(g)&&digits(g)!==digits(a))openWa(g,msg);},700);
+};
+
+function viewWa(){
+  var mgrs=db.users.filter(function(u){return u.role==="manager";});
+  var fds=db.users.filter(function(u){return u.role==="frontdesk";});
+  var ceos=db.users.filter(function(u){return u.role==="ceo"||u.role==="gm";});
+  function row(u){return "<p>"+u.name+" · "+u.site+" · "+(waOk(u.whatsapp)?digits(u.whatsapp):"<b>missing</b>")+"</p>";}
+  var edit=isSuper()?"<div class=card><h3>Hotel WhatsApp</h3><p>Duty manager line (certify alerts, shift reports, breakfast).</p><input id=wa value='"+digits(db.whatsapp)+"' placeholder='0803 000 0000'><p>Default front desk line</p><input id=fd value='"+digits(db.frontDesk)+"' placeholder='0803 000 0000'><button class=btn id=saveWa2>Save WhatsApp numbers</button> <button class='btn dark' id=testMgr>Test duty manager</button> <button class='btn dark' id=testFd>Test front desk</button></div>":"";
+  return "<div class=card><h3>WhatsApp routing</h3><p>Room certified → Front desk</p><p>Shift report / breakfast / late job → Duty manager + CEO</p><p>Type 0803… or 234803… Both work.</p></div>"+edit+"<div class=card><h3>Saved numbers</h3><p><b>Hotel DM line</b> "+(waOk(db.whatsapp)?digits(db.whatsapp):"not set")+"</p><p><b>Default FD line</b> "+(waOk(db.frontDesk)?digits(db.frontDesk):"not set")+"</p><p>Managers</p>"+mgrs.map(row).join("")+"<p>Front desk</p>"+fds.map(row).join("")+"<p>CEO</p>"+ceos.map(row).join("")+"</div>";
+}
+
 function shiftLabel(u){return (u&&u.shift)?("Shift "+u.shift+" · "+(u.hours||"08:00-19:00")):"08:00-19:00";}
 function money(el){var n=parseFloat((el&&el.value)||"0");return isNaN(n)?0:n;}
 function siteCheckins(){return (db.checkins||[]).filter(function(c){return c.day===today()&&siteMatch(c.site);});}
@@ -41,8 +69,9 @@ var _viewStaff=viewStaff,_viewBoard=viewBoard,_bind=bind,_draw=draw;
 
 viewStaff=function(){
   if(isStore())return viewStore();
-  if(mgr())return scorePanel()+viewDeskReports()+viewStore();
-  if(isGM())return scorePanel()+viewDeskReports()+viewStore();
+  if(mgr())return scorePanel()+viewDeskReports()+viewWa()+viewStore();
+  if(isGM())return scorePanel()+viewDeskReports()+viewWa()+viewStore();
+  if(isSuper())return viewWa()+_viewStaff();
   return _viewStaff();
 };
 
@@ -61,6 +90,17 @@ viewBoard=function(){
 
 bind=function(){
   _bind();
+  var saveWa2=document.getElementById("saveWa2");
+  if(saveWa2)saveWa2.onclick=function(){
+    if(!isSuper())return;
+    db.whatsapp=digits(document.getElementById("wa").value);
+    db.frontDesk=digits(document.getElementById("fd").value);
+    save();alert("WhatsApp numbers saved.");draw();
+  };
+  var testMgr=document.getElementById("testMgr");
+  if(testMgr)testMgr.onclick=function(){openWa(waDigits(),"POSH CERTIFY test · duty manager line is working.");};
+  var testFd=document.getElementById("testFd");
+  if(testFd)testFd.onclick=function(){openWa(fdDigits(),"POSH CERTIFY test · front desk line is working.");};
   var saveCin=document.getElementById("saveCin");
   if(saveCin)saveCin.onclick=function(){
     if(!isFD())return;
