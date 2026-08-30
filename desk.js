@@ -23,6 +23,41 @@ db.users.forEach(function(u){
 });
 try{save();}catch(e){}
 try{document.title="Posh Manager";}catch(e){}
+if(!db.fixtures||!db.fixtures.length){
+  db.fixtures=[{id:"fx_kettle",name:"Kettle",par:1},{id:"fx_teaspoon",name:"Teaspoon",par:2},{id:"fx_teacup",name:"Tea cup",par:2},{id:"fx_glass",name:"Glass cup",par:2},{id:"fx_mug",name:"Coffee mug",par:2},{id:"fx_ice",name:"Ice bucket",par:1},{id:"fx_tray",name:"Tray",par:1},{id:"fx_remote",name:"TV remote",par:1},{id:"fx_dryer",name:"Hair dryer",par:1}];
+  try{save();}catch(e){}
+}
+function fixtureItems(){return db.fixtures||[];}
+function toiletItems(){return catalog().filter(function(it){return it.cat==="Toiletries";});}
+function guestCountItems(){return catalog().filter(function(it){return it.cat==="Toiletries"||it.cat==="Towels"||it.cat==="Linen";});}
+function fixtureMiss(r){var n=0;Object.keys((r&&r.fixtureMiss)||{}).forEach(function(k){n+=Number(r.fixtureMiss[k]||0);});return n;}
+var _missCount=missCount;
+missCount=function(r){return _missCount(r)+fixtureMiss(r);};
+storeItems=function(){
+  if(isLaundry())return linenItems();
+  if(isStore())return toiletItems();
+  if(isMaint()&&!isSuper()&&!mgr())return maintItems();
+  return catalog().filter(function(it){return it.cat!=="Amenities";});
+};
+viewSupply=function(){
+  if(!(isStore()||isSuper()))return "";
+  var its="<select id=sitem>"+toiletItems().map(function(it){return "<option value='"+it.id+"'>"+it.name+" ("+stockOf(it.id)+")</option>";}).join("")+"</select>";
+  var dest="<select id=sdest><option value='room'>Room</option><option value='housekeeping'>Housekeeping</option></select>";
+  var rooms="<select id=sroom>"+siteRooms().map(function(r){return "<option>"+r.number+"</option>";}).join("")+"</select>";
+  var todayList=(db.supplies||[]).filter(function(s){return s.day===today()&&siteMatch(s.site);}).reverse().map(function(s){return "<p>"+s.qty+" x "+itemName(s.item)+" → "+(s.dest==="room"?("Rm "+s.room):s.dest)+" · "+s.by+"</p>";}).join("");
+  return "<div class=card><h3>Daily toiletries supply</h3><p>Storekeeper supplies soap, shampoo and other toiletries daily. Room fixtures stay in the room and are not issued daily.</p>"+dest+rooms+its+"<input id=sqty2 type=number min=1 placeholder='Qty'><button class=btn id=doSupply>Supply now</button></div><div class=card><h3>Supplied today</h3>"+(todayList||"<p>None yet.</p>")+"</div>";
+};
+laundryBox=function(r){
+  var can=user&&user.role==="housekeeper"&&r.hk===user.id&&r.job;
+  var fx=fixtureItems().map(function(it){var n=Number((r.fixtureMiss||{})[it.id]||0);return "<div class=row><span>"+it.name+" <small>should be "+(it.par||1)+"</small></span>"+(can?"<input class=fq type=number min=0 data-item='"+it.id+"' value='"+(n||"")+"' placeholder='Missing'>":"<span class=qty>"+n+" missing</span>")+"</div>";}).join("");
+  var daily=guestCountItems().map(function(it){var n=Number((r.missing||{})[it.id]||0);return "<div class=row><span>"+it.name+" · "+it.cat+"</span>"+(can?"<input class=q type=number min=0 data-item='"+it.id+"' value='"+(n||"")+"'>":"<span class=qty>"+n+"</span>")+"</div>";}).join("");
+  return "<div class=card><h3>Room fixtures</h3><p>Permanent in the room. Enter how many are missing. Replace before the room is sold.</p>"+fx+"</div><div class=card><h3>Toiletries, towels and linen</h3><p>Toiletries come from store daily. Towels and linen go through laundry.</p>"+daily+(can?"<button class=btn id=lrep>Save counts</button>":"")+"</div>"+(fixtureMiss(r)?"<div class=warn>"+fixtureMiss(r)+" fixture(s) missing. Replace before certify / sell.</div>":"");
+};
+function viewFixtures(){
+  if(!isSuper())return "";
+  var rows=fixtureItems().map(function(it){return "<div class=card><b>"+it.name+"</b> · expected "+(it.par||1)+"<br><input data-fxn='"+it.id+"' value='"+it.name+"'><input data-fxp='"+it.id+"' type=number min=1 value='"+(it.par||1)+"'><button class='btn saveFx' data-id='"+it.id+"'>Save</button> <button class='btn bad delFx' data-id='"+it.id+"'>Remove</button></div>";}).join("");
+  return "<h1>Room fixtures</h1><div class=ok>Housekeepers count these on every room. They stay in the room. Store only replaces a unit when one is reported missing.</div>"+(rows||"<p>None yet.</p>")+"<div class=card><h3>Add fixture</h3><input id=fxname placeholder='e.g. Wine glass'><input id=fxpar type=number min=1 value=1 placeholder='How many should be in each room'><button class=btn id=addFx>Save fixture</button></div>";
+}
 function isAcct(){return user&&user.role==="accountant";}
 var _roleName=roleName;
 roleName=function(r){return r==="accountant"?"Accountant":_roleName(r);};
@@ -63,7 +98,7 @@ function viewWa(){
   var ceos=db.users.filter(function(u){return u.role==="ceo"||u.role==="gm";});
   var accts=db.users.filter(function(u){return u.role==="accountant";});
   function row(u){return "<p>"+u.name+" · "+u.site+" · "+(waOk(u.whatsapp)?digits(u.whatsapp):"<b>missing</b>")+"</p>";}
-  var edit=isSuper()?"<div class=card><h3>Hotel WhatsApp</h3><p>Duty manager line (certify alerts, shift reports, breakfast).</p><input id=wa value='"+digits(db.whatsapp)+"' placeholder='0803 000 0000'><p>Default front desk line</p><input id=fd value='"+digits(db.frontDesk)+"' placeholder='0803 000 0000'><button class=btn id=saveWa2>Save WhatsApp numbers</button> <button class='btn dark' id=testMgr>Test duty manager</button> <button class='btn dark' id=testFd>Test front desk</button> <button class='btn dark' id=testAcct>Test accountant</button></div>":"";
+  var edit=isSuper()?"<div class=card><h3>Hotel WhatsApp</h3><input id=wa value='"+digits(db.whatsapp)+"' placeholder='0803 000 0000'><input id=fd value='"+digits(db.frontDesk)+"' placeholder='0803 000 0000'><button class=btn id=saveWa2>Save WhatsApp numbers</button> <button class='btn dark' id=testMgr>Test duty manager</button> <button class='btn dark' id=testFd>Test front desk</button> <button class='btn dark' id=testAcct>Test accountant</button></div>":"";
   return "<div class=card><h3>WhatsApp routing</h3><p>Room certified → Front desk</p><p>Shift / sales report → Duty manager + Accountant + CEO</p><p>Breakfast report → Duty manager + CEO</p></div>"+edit+"<div class=card><h3>Saved numbers</h3><p><b>Hotel DM line</b> "+(waOk(db.whatsapp)?digits(db.whatsapp):"not set")+"</p><p><b>Default FD line</b> "+(waOk(db.frontDesk)?digits(db.frontDesk):"not set")+"</p><p>Managers</p>"+mgrs.map(row).join("")+"<p>Front desk</p>"+fds.map(row).join("")+"<p>Accountants</p>"+(accts.map(row).join("")||"<p>None</p>")+"<p>CEO</p>"+ceos.map(row).join("")+"</div>";
 }
 function shiftLabel(u){return (u&&u.shift)?("Shift "+u.shift+" · "+(u.hours||"08:00-19:00")):"08:00-19:00";}
@@ -88,9 +123,7 @@ function siteDebts(){return (db.debts||[]).filter(function(d){return siteMatch(d
 function openDebts(){return siteDebts().filter(function(d){return Number(d.remaining||0)>0;});}
 function paidToday(list){return list.reduce(function(a,d){return a+(d.payments||[]).filter(function(p){return p.day===today();}).reduce(function(x,p){return x+Number(p.amount||0);},0);},0);}
 function newDebtToday(list){return list.filter(function(d){return d.day===today();}).reduce(function(a,d){return a+Number(d.amount||0);},0);}
-function salesPack(list){
-  return {rooms:sumField(list,function(c){return c.amount;}),mart:sumField(list,function(c){return (c.extras||{}).minimart;}),extras:sumField(list,extrasNoMart),billed:deskSalesTotal(list),debt:sumField(list,function(c){return c.debt;}),collected:sumField(list,function(c){return Math.max(0,checkinTotal(c)-Number(c.debt||0));})};
-}
+function salesPack(list){return {rooms:sumField(list,function(c){return c.amount;}),mart:sumField(list,function(c){return (c.extras||{}).minimart;}),extras:sumField(list,extrasNoMart),billed:deskSalesTotal(list),debt:sumField(list,function(c){return c.debt;}),collected:sumField(list,function(c){return Math.max(0,checkinTotal(c)-Number(c.debt||0));})};}
 function salesCard(list){
   var p=salesPack(list),dt=newDebtToday(siteDebts()),dp=paidToday(siteDebts());
   return "<div class=card><h3>Documented sales · "+today()+"</h3><p>Room sales <b>"+naira(p.rooms)+"</b></p><p>Mini mart <b>"+naira(p.mart)+"</b></p><p>Extras <b>"+naira(p.extras)+"</b></p><p>Total billed <b>"+naira(p.billed)+"</b></p><p>Collected now <b>"+naira(p.collected)+"</b></p><p>New debt <b>"+naira(dt)+"</b></p><p>Debt payments today <b>"+naira(dp)+"</b></p><p>Open debt book <b>"+naira(openDebts().reduce(function(a,d){return a+Number(d.remaining||0);},0))+"</b></p></div>";
@@ -120,7 +153,7 @@ function viewDebts(){
   var closed=hist.filter(function(d){return Number(d.remaining||0)<=0;}).slice(0,8).map(function(d){return "<p>"+d.guest+" · Rm "+d.room+" · cleared "+naira(d.amount)+" · "+d.day+"</p>";}).join("");
   return "<h1>Debt book</h1><div class=ok>Open "+open.length+" · remaining "+naira(open.reduce(function(a,d){return a+Number(d.remaining||0);},0))+"</div>"+(cards||"<p>No open debts.</p>")+"<div class=card><h3>Cleared debts</h3>"+(closed||"<p>None yet.</p>")+"</div>";
 }
-function viewAccounts(){var list=siteCheckins();return "<h1>Accounts</h1><div class=ok>"+(seesAll()?"":workSite()+" · ")+"Sales, extras, debt and payments.</div>"+salesCard(list)+viewDeskReports()+"<h1>Today's folios</h1>"+(list.slice().reverse().map(checkinCard).join("")||"<p>No check-ins today.</p>")+viewDebts();}
+function viewAccounts(){var list=siteCheckins();return "<h1>Accounts</h1>"+salesCard(list)+viewDeskReports()+"<h1>Today's folios</h1>"+(list.slice().reverse().map(checkinCard).join("")||"<p>No check-ins today.</p>")+viewDebts();}
 function viewDesk(){
   if(isAcct()||(isGM()&&tab==="desk"))return viewAccounts();
   var list=isFD()?myCheckins():siteCheckins();
@@ -131,7 +164,6 @@ function viewDesk(){
 }
 var _mealReportText=mealReportText;
 mealReportText=function(){return String(_mealReportText()).replace(/POSH CERTIFY/g,"POSH MANAGER").replace(/POSH BREAKFAST REPORT/g,"POSH MANAGER BREAKFAST REPORT");};
-var _viewMeals=viewMeals;
 viewMeals=function(){
   var day=today(),posted=menuFor(day),choices=posted&&posted.choices&&posted.choices.length?posted.choices:[],noPost=!posted;
   var list=todayMeals().filter(function(b){return siteMatch(roomSiteOf(b.room));});
@@ -144,10 +176,9 @@ viewMeals=function(){
   var todayCard="<div class=card><h3>Today · "+day+"</h3>"+(posted?choices.map(function(c){return "<p>"+c+"</p>";}).join(""):"<p>No menu posted for today.</p>")+"</div>";
   var issue=isFD()?(noPost?"<div class=warn>Cannot issue breakfast until the chef posts today's dated menu.</div>":"<div class=card><h3>Issue breakfast</h3><input id=gname placeholder='Guest name'><select id=groom>"+siteRooms().map(function(r){return "<option>"+r.number+"</option>";}).join("")+"</select><select id=gmeal>"+choices.map(function(c){return "<option>"+c+"</option>";}).join("")+"</select><button class=btn id=issueBf>Issue code</button></div>"):"";
   var kit=isKitchen()?"<div class=card><h3>Verify guest on arrival</h3><input id=gcode placeholder='Enter guest code' inputmode=numeric><button class=btn id=findBf>Verify code</button><div id=bfhit></div></div>":"";
-  if(mgr()||isGM()||isAcct()||isSuper())kit+="<div class=ok>Breakfast is run by kitchen and front desk only. Duty manager does not issue or verify.</div>";
+  if(mgr()||isGM()||isAcct()||isSuper())kit+="<div class=ok>Breakfast is run by kitchen and front desk only.</div>";
   var rows=list.slice().reverse().map(function(b){return isKitchen()?"<div class=card><b>"+b.guest+"</b><br>"+b.meal+(b.status==="served"?" · SERVED":" · waiting")+"</div>":"<div class=card><b>"+b.code+"</b> · "+b.guest+" · Rm "+b.room+"<br>"+b.meal+" · "+b.status.toUpperCase()+"</div>";}).join("");
-  var sendBtn=(isKitchen()||isFD())?"<button class=btn id=sendBfRep>Send today's report</button>":"";
-  return head+todayCard+form+board+issue+kit+sendBtn+(rows||"<p>None issued yet.</p>");
+  return head+todayCard+form+board+issue+kit+((isKitchen()||isFD())?"<button class=btn id=sendBfRep>Send today's report</button>":"")+(rows||"<p>None issued yet.</p>");
 };
 var _viewStaff=viewStaff,_viewBoard=viewBoard,_bind=bind,_draw=draw;
 viewStaff=function(){
@@ -155,7 +186,7 @@ viewStaff=function(){
   if(isAcct())return viewAccounts()+viewWa();
   if(mgr())return scorePanel()+viewDeskReports()+viewWa()+viewStore();
   if(isGM())return scorePanel()+salesCard(siteCheckins())+viewDeskReports()+viewWa()+viewStore();
-  if(isSuper())return viewWa()+_viewStaff();
+  if(isSuper())return viewWa()+viewFixtures()+_viewStaff();
   return _viewStaff();
 };
 viewBoard=function(){
@@ -166,13 +197,49 @@ viewBoard=function(){
   if(isGM()){
     var tm=todayMeals(),sv=tm.filter(function(b){return b.status==="served";}).length;
     var openI=(db.issues||[]).filter(function(x){return x.status!=="completed";}).length;
-    var cin=siteCheckins();
-    return "<div class=ok>CEO report only.</div><h1>House report</h1><div class=card><h3>Breakfast today</h3><p><b>"+sv+"</b> served of <b>"+tm.length+"</b></p></div>"+salesCard(cin)+"<div class=card><h3>Maintenance</h3><p>"+openI+" open issues</p></div>"+scorePanel()+viewDeskReports()+viewStore();
+    return "<div class=ok>CEO report only.</div><h1>House report</h1><div class=card><h3>Breakfast today</h3><p><b>"+sv+"</b> served of <b>"+tm.length+"</b></p></div>"+salesCard(siteCheckins())+"<div class=card><h3>Maintenance</h3><p>"+openI+" open issues</p></div>"+scorePanel()+viewDeskReports()+viewStore();
   }
   return _viewBoard();
 };
 bind=function(){
   _bind();
+  var lrep=document.getElementById("lrep");
+  if(lrep){
+    var prevL=lrep.onclick;
+    lrep.onclick=function(){
+      if(user.role!=="housekeeper")return;
+      var r=db.rooms.filter(function(x){return x.id===roomId;})[0];
+      if(!r)return;
+      var fx={};
+      document.querySelectorAll(".fq").forEach(function(inp){var n=parseInt(inp.value,10);if(n>0)fx[inp.getAttribute("data-item")]=n;});
+      r.fixtureMiss=fx;
+      if(prevL)prevL();else{save();draw();}
+    };
+  }
+  var addFx=document.getElementById("addFx");
+  if(addFx)addFx.onclick=function(){
+    if(!isSuper())return;
+    var name=(document.getElementById("fxname").value||"").trim();if(!name)return;
+    var par=parseInt(document.getElementById("fxpar").value,10);if(!(par>0))par=1;
+    db.fixtures.push({id:"fx"+Date.now(),name:name,par:par});save();draw();
+  };
+  document.querySelectorAll(".saveFx").forEach(function(b){
+    b.onclick=function(){
+      if(!isSuper())return;
+      var id=b.getAttribute("data-id");
+      db.fixtures.forEach(function(it){
+        if(it.id!==id)return;
+        var n=(document.querySelector("[data-fxn='"+id+"']")||{}).value;
+        var p=parseInt((document.querySelector("[data-fxp='"+id+"']")||{}).value,10);
+        if(n&&String(n).trim())it.name=String(n).trim();
+        if(p>0)it.par=p;
+      });
+      save();draw();
+    };
+  });
+  document.querySelectorAll(".delFx").forEach(function(b){
+    b.onclick=function(){if(!isSuper())return;db.fixtures=db.fixtures.filter(function(it){return it.id!==b.getAttribute("data-id");});save();draw();};
+  });
   var saveMenu=document.getElementById("saveMenu");
   if(saveMenu)saveMenu.onclick=function(){
     if(!isKitchen())return;
@@ -211,7 +278,7 @@ bind=function(){
     if(!mgr())return;
     var r=db.rooms.filter(function(x){return x.id===roomId;})[0];
     if(!r||!siteMatch(r.site))return;
-    if(r.status==="ooo"||missCount(r)>0||mediaCount(r)<3||!r.laundryChecked){alert("Not ready.");return;}
+    if(r.status==="ooo"||missCount(r)>0||mediaCount(r)<3||!r.laundryChecked){alert("Not ready. Replace missing fixtures and toiletries first.");return;}
     r.status="certified";save();
     openWa(fdDigits(),"POSH MANAGER Room "+r.number+" CERTIFIED. Ready to sell.");
     roomId=null;draw();
