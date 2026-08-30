@@ -66,6 +66,11 @@ function viewDesk(){
   return "<h1>Front desk</h1><div class=ok>Today "+today()+" · "+list.length+" check-ins · sales "+naira(deskSalesTotal(list))+"</div>"+form+(rows||"<p>No check-ins this shift yet.</p>")+((mgr()||isGM())?viewDeskReports():"");
 }
 
+var _mealReportText=mealReportText;
+mealReportText=function(){
+  return String(_mealReportText()).replace(/POSH CERTIFY/g,"POSH MANAGER").replace(/POSH BREAKFAST REPORT/g,"POSH MANAGER BREAKFAST REPORT");
+};
+
 var _viewStaff=viewStaff,_viewBoard=viewBoard,_bind=bind,_draw=draw;
 
 viewStaff=function(){
@@ -91,6 +96,16 @@ viewBoard=function(){
 
 bind=function(){
   _bind();
+  var cert=document.getElementById("cert");
+  if(cert)cert.onclick=function(){
+    if(!mgr())return;
+    var r=db.rooms.filter(function(x){return x.id===roomId;})[0];
+    if(!r||!siteMatch(r.site))return;
+    if(r.status==="ooo"||missCount(r)>0||mediaCount(r)<3||!r.laundryChecked){alert("Not ready.");return;}
+    r.status="certified";save();
+    openWa(fdDigits(),"POSH MANAGER Room "+r.number+" CERTIFIED. Ready to sell.");
+    roomId=null;draw();
+  };
   var saveWa2=document.getElementById("saveWa2");
   if(saveWa2)saveWa2.onclick=function(){
     if(!isSuper())return;
