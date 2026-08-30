@@ -8,7 +8,14 @@
 <body style="margin:0;font-family:system-ui;background:#1c332c;color:#f4efe6;padding:24px">
 <p>Opening Posh Manager…</p>
 <script>
-var V="20260830g";
+var V="20260830L";
+function addScript(src,next){
+  var s=document.createElement("script");
+  s.src=src+"?v="+V;
+  s.onload=next||function(){};
+  s.onerror=next||function(){};
+  document.documentElement.appendChild(s);
+}
 fetch("app.html?v="+V,{cache:"no-store"}).then(function(r){
   if(!r.ok)throw new Error(r.status);
   return r.text();
@@ -16,11 +23,9 @@ fetch("app.html?v="+V,{cache:"no-store"}).then(function(r){
   document.open();
   document.write(html);
   document.close();
-  var s=document.createElement("script");
-  s.src="desk.js?v="+V;
-  document.documentElement.appendChild(s);
+  addScript("desk.js",function(){addScript("loss.js");});
 }).catch(function(){
-  document.body.innerHTML="<p>Could not load. Open this instead:</p><p><a href='app.html' style='color:#c4a574'>app.html</a></p>";
+  document.body.innerHTML="<p>Could not load. <a href='app.html' style='color:#c4a574'>Open app.html</a></p>";
 });
 </script>
 </body>
