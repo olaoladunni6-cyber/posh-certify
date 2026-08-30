@@ -2,65 +2,61 @@
 <html lang="en-NG">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#1c332c">
-<title>Posh Certify · Posh Hotels & Suites Nigeria</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Posh Certify</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#101512;--soft:#5a635e;--paper:#f4efe6;--card:#fffdf8;--gold:#c4a574;--gold2:#e8d7b3;--green:#1c332c;--ok:#2f6b4f;--warn:#b07a2a;--bad:#8c3a32;--line:rgba(16,21,18,.1)}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;min-height:100%;background:#0d1613;color:var(--ink);font-family:Outfit,system-ui,sans-serif}
+:root{--ink:#101512;--paper:#f4efe6;--gold:#c4a574;--green:#1c332c;--soft:#5a635e}
+*{box-sizing:border-box}
+html,body{margin:0;background:#0d1613;font-family:Outfit,system-ui,sans-serif;color:var(--ink)}
 body{max-width:480px;margin:0 auto}
-h1,h2,h3{font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;margin:0}
-button,input,textarea{font:inherit}button{cursor:pointer}
-#app{min-height:100dvh;background:var(--paper);padding-bottom:84px}
-#app.auth{padding-bottom:0;background:var(--green)}
-.login{min-height:100dvh;color:var(--paper);padding:36px 22px 28px;display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(16,21,18,.35),rgba(28,51,44,.92) 48%,#1c332c),url("https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=900&q=70") center/cover}
-.brand{display:flex;align-items:center;gap:10px;letter-spacing:.22em;text-transform:uppercase;font-size:10px;color:var(--gold2)}
-.pmark{width:36px;height:36px;border:1px solid var(--gold);display:grid;place-items:center;font-family:"Cormorant Garamond",serif;font-size:20px;color:var(--gold2)}
-.login h1{font-size:40px;line-height:.95;margin:24px 0 10px}
-.lede{color:#e8d7b3;line-height:1.5;font-size:14px}
-.props{display:flex;gap:8px;margin:16px 0}
-.props span{border:1px solid rgba(196,165,116,.45);border-radius:999px;padding:5px 10px;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
-.sheet{margin-top:auto;background:var(--paper);color:var(--ink);border-radius:22px 22px 0 0;padding:18px 16px;margin-left:-22px;margin-right:-22px}
-.acct{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px 14px;margin:8px 0;display:flex;justify-content:space-between}
-.acct small{color:var(--soft)}.pin{font-size:11px;color:#8a6d3b}
-.top{position:sticky;top:0;z-index:20;background:var(--green);color:var(--paper);padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
-.av{width:30px;height:30px;border-radius:50%;background:var(--gold);color:var(--ink);display:grid;place-items:center;font-size:11px;font-weight:600}
-.wrap{padding:16px}.kicker{color:var(--soft);font-size:12px}
-.page-h{display:flex;justify-content:space-between;align-items:flex-end;margin:4px 0 14px}
-.page-h h1{font-size:28px}
-.pill{background:#fff;border-radius:999px;padding:5px 10px;font-size:11px;text-transform:uppercase}
-.pill.ok{background:#dcebe3;color:var(--ok)}.pill.warn{background:#f3e6c8;color:var(--warn)}.pill.bad{background:#f3d8d5;color:var(--bad)}
-.banner{background:var(--green);color:var(--paper);border-radius:16px;padding:14px;margin-bottom:14px}
-.banner p{margin:4px 0 0;color:var(--gold2);font-size:13px}
-.room{background:var(--card);border-radius:16px;padding:14px;margin-bottom:10px;display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center}
-.rno{font-family:"Cormorant Garamond",serif;font-size:26px}
-.meta{color:var(--soft);font-size:12px}
-.btn{border:0;border-radius:999px;padding:11px 16px;background:var(--ink);color:#fff}
-.btn.gold{background:var(--gold);color:var(--ink)}.btn.ok{background:var(--ok)}.btn.bad{background:var(--bad)}
-.btn.line{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn.wide{width:100%}
-.item{background:var(--card);border-radius:16px;padding:14px;margin-bottom:10px}
-.item h3{font-size:20px}.vs{font-size:13px;color:var(--soft);margin:8px 0}
-.thumbs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.thumb{width:84px;height:68px;object-fit:cover;border-radius:10px;background:#eee}
-.file{position:relative;overflow:hidden}.file input{position:absolute;inset:0;opacity:0}
-textarea{width:100%;min-height:80px;border:1px solid var(--line);border-radius:12px;padding:10px}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.split{display:grid;gap:8px;margin-bottom:12px}
-.split article{background:#fff;border-radius:14px;padding:12px;font-size:13px;color:var(--soft)}
-.split .hi{outline:1px solid var(--gold)}.split h3{color:var(--ink);font-size:20px;margin-bottom:6px}
-.dock{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;background:#fff;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:8px 6px 16px;z-index:30}
-.dock button{background:none;border:0;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--soft)}
-.dock button.on{color:var(--green);font-weight:600}
-.dock b{display:block;font-size:16px;font-family:"Cormorant Garamond",serif}
-#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 14px;border-radius:999px;font-size:13px;display:none;z-index:50}
-.bebar{background:#dcebe3;color:#215c3a;padding:10px 12px;border-radius:12px;font-size:13px;margin:10px 0}
+h1,h3{font-family:"Cormorant Garamond",Georgia,serif;margin:0}
+button{font:inherit;cursor:pointer}
+.login{min-height:100vh;color:#f4efe6;padding:32px 20px;display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(16,21,18,.4),#1c332c),url(https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=900&q=70) center/cover}
+.brand{letter-spacing:.2em;text-transform:uppercase;font-size:10px;color:#e8d7b3}
+.login h1{font-size:38px;line-height:.95;margin:22px 0 10px}
+.sheet{margin-top:auto;background:var(--paper);color:var(--ink);border-radius:22px 22px 0 0;padding:16px;margin-left:-20px;margin-right:-20px}
+.acct{width:100%;text-align:left;border:0;background:#fff;border-radius:14px;padding:12px;margin:8px 0}
+.top{background:var(--green);color:#f4efe6;padding:14px 16px;display:flex;justify-content:space-between}
+.wrap{background:var(--paper);min-height:calc(100vh - 52px);padding:16px 16px 90px}
+.room{background:#fff;border-radius:14px;padding:12px;margin:8px 0;display:flex;justify-content:space-between;align-items:center}
+.btn{border:0;border-radius:999px;padding:10px 14px;background:#c4a574;color:#101512}
+.ok{background:#dcebe3;color:#215c3a;padding:10px;border-radius:12px;margin:8px 0}
+.dock{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;display:flex;justify-content:space-around;padding:10px;font-size:12px}
+.dock b{display:block;text-align:center}
 </style>
 </head>
 <body>
-<div id="app"></div>
-<div id="toast"></div>
-<script src="app.js"></script>
+<div id="app">Loading Posh Certify…</div>
+<script>
+const USERS=[
+ {id:"sophia",name:"Sophia Adeyemi",role:"manager",title:"Duty Manager",site:"Ikeja & VI"},
+ {id:"blessing",name:"Blessing Okoro",role:"housekeeper",title:"Senior Housekeeper",site:"Ikeja"},
+ {id:"tunde",name:"Tunde Balogun",role:"housekeeper",title:"Victoria Island",site:"Victoria Island"}
+];
+let rooms=JSON.parse(localStorage.getItem("posh-hosted")||"null")||[
+ {n:"201",s:"Ikeja",t:"Deluxe King",hk:"blessing",st:"pending"},
+ {n:"204",s:"Ikeja",t:"Deluxe Twin",hk:"blessing",st:"pending"},
+ {n:"208",s:"Ikeja",t:"Junior Suite",hk:"blessing",st:"pending"},
+ {n:"501",s:"Victoria Island",t:"Executive King",hk:"tunde",st:"pending"},
+ {n:"510",s:"Victoria Island",t:"Junior Suite",hk:"tunde",st:"submitted"},
+ {n:"518",s:"Victoria Island",t:"Posh Suite",hk:"tunde",st:"pending"}
+];
+let user=null;
+function save(){localStorage.setItem("posh-hosted",JSON.stringify(rooms));}
+function go(u){user=u;draw();}
+function setSt(i,st){rooms[i].st=st;save();draw();}
+function draw(){
+ const el=document.getElementById("app");
+ if(!user){
+  el.innerHTML='<section class="login"><div class="brand">P · Posh Hotels & Suites · NG</div><h1>Every room certified before the guest arrives.</h1><p>Housekeepers send the room. Duty manager certifies against the Posh Nigeria standard.</p><div class="sheet"><p>Staff login · tap your name</p>'+USERS.map(function(u){return '<button class="acct" onclick=\'go('+JSON.stringify(u)+')\'><b>'+u.name+'</b><br>'+u.title+' · '+u.site+'</button>';}).join("")+'</div></section>';
+  return;
+ }
+ const list=user.role==="manager"?rooms:rooms.filter(function(r){return r.hk===user.id;});
+ el.innerHTML='<div class="top"><span>Certify NG</span><span>'+user.name.split(" ")[0]+'</span></div><div class="wrap"><div class="ok">Hosted Posh Certify · work saves on this phone</div><h1>Rooms</h1>'+list.map(function(r,i){var ix=rooms.indexOf(r);return '<div class="room"><div><b>'+r.n+'</b> '+r.t+'<br>'+r.s+' · '+r.st+'</div><div>'+(user.role==="housekeeper"?'<button class="btn" onclick="setSt('+ix+',\'submitted\')">Send</button>':'<button class="btn" onclick="setSt('+ix+',\'certified\')">Certify</button>')+'</div></div>';}).join("")+'<p><button class="btn" onclick="user=null;draw()">Sign out</button></p></div>';
+}
+draw();
+</script>
 </body>
 </html>
