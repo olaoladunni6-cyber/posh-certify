@@ -15,6 +15,7 @@ db.users.forEach(function(u){
   if(u.id==="desk"){u.name="Front Desk Ikeja (legacy)";u.shift=u.shift||"A";}
 });
 try{save();}catch(e){}
+try{document.title="Posh Manager";}catch(e){}
 
 var _digits=digits;
 digits=function(s){
@@ -51,7 +52,7 @@ function myCheckins(){return siteCheckins().filter(function(c){return !isFD()||c
 function extrasTotal(c){var e=c.extras||{};return Number(e.early||0)+Number(e.late||0)+Number(e.laundry||0)+Number(e.minimart||0)+Number(e.other||0);}
 function checkinTotal(c){return Number(c.amount||0)+extrasTotal(c);}
 function deskSalesTotal(list){return list.reduce(function(a,c){return a+checkinTotal(c);},0);}
-function shiftReportText(rep){return "POSH SHIFT REPORT\n"+(rep.site||"")+"\n"+rep.day+"\nBy "+rep.by+"\nShift "+(rep.shift||"")+" 08:00-19:00\nSales "+naira(rep.sales)+"\nCheck-ins "+rep.arrivals+"\nIn-house "+rep.inhouse+"\nExpected "+rep.expected+"\nIncidents: "+(rep.incident||"None");}
+function shiftReportText(rep){return "POSH MANAGER SHIFT REPORT\n"+(rep.site||"")+"\n"+rep.day+"\nBy "+rep.by+"\nShift "+(rep.shift||"")+" 08:00-19:00\nSales "+naira(rep.sales)+"\nCheck-ins "+rep.arrivals+"\nIn-house "+rep.inhouse+"\nExpected "+rep.expected+"\nIncidents: "+(rep.incident||"None");}
 function viewDeskReports(){
   var reps=(db.shiftReports||[]).filter(function(r){return siteMatch(r.site);}).slice().reverse();
   var cards=reps.map(function(r){return "<div class=card><b>"+r.day+" · "+r.site+"</b><br>"+r.by+" · Shift "+(r.shift||"A")+"<br>Sales "+naira(r.sales)+" · arrivals "+r.arrivals+" · in-house "+r.inhouse+" · expected "+r.expected+"<br>"+(r.incident?("Incident: "+r.incident):"No incident")+"</div>";}).join("");
@@ -98,9 +99,9 @@ bind=function(){
     save();alert("WhatsApp numbers saved.");draw();
   };
   var testMgr=document.getElementById("testMgr");
-  if(testMgr)testMgr.onclick=function(){openWa(waDigits(),"POSH CERTIFY test · duty manager line is working.");};
+  if(testMgr)testMgr.onclick=function(){openWa(waDigits(),"POSH MANAGER test · duty manager line is working.");};
   var testFd=document.getElementById("testFd");
-  if(testFd)testFd.onclick=function(){openWa(fdDigits(),"POSH CERTIFY test · front desk line is working.");};
+  if(testFd)testFd.onclick=function(){openWa(fdDigits(),"POSH MANAGER test · front desk line is working.");};
   var saveCin=document.getElementById("saveCin");
   if(saveCin)saveCin.onclick=function(){
     if(!isFD())return;
@@ -139,12 +140,12 @@ draw=function(){
       document.getElementById("pincancel").onclick=function(){pending=null;draw();};
       return;
     }
-    el.innerHTML="<div class=login><h1>Posh Certify</h1>"+db.users.map(function(u){return "<button class=acct data-id='"+u.id+"'><b>"+u.name+"</b><br>"+roleName(u.role)+" · "+u.site+"</button>";}).join("")+"</div>";
+    el.innerHTML="<div class=login><h1>Posh Manager</h1>"+db.users.map(function(u){return "<button class=acct data-id='"+u.id+"'><b>"+u.name+"</b><br>"+roleName(u.role)+" · "+u.site+"</button>";}).join("")+"</div>";
     el.querySelectorAll(".acct").forEach(function(b){b.onclick=function(){pending=db.users.filter(function(u){return u.id===b.getAttribute("data-id");})[0];draw();};});
     return;
   }
   var inner=tab==="staff"?viewStaff():tab==="me"?viewMe():tab==="meals"?viewMeals():tab==="issues"?viewIssues():tab==="laundry"?viewSlips():tab==="desk"?viewDesk():roomId?viewRoom():viewBoard();
-  el.innerHTML="<div class=top><span>Certify NG</span><span>"+user.name.split(" ")[0]+"</span></div><div class=wrap>"+inner+"</div><div class=dock><button id=d1>Rooms</button><button id=d2>Fix</button><button id=d5>Meals</button><button id=d6>Desk</button><button id=d3>Staff</button><button id=d4>Me</button></div>";
+  el.innerHTML="<div class=top><span>Posh Manager</span><span>"+user.name.split(" ")[0]+"</span></div><div class=wrap>"+inner+"</div><div class=dock><button id=d1>Rooms</button><button id=d2>Fix</button><button id=d5>Meals</button><button id=d6>Desk</button><button id=d3>Staff</button><button id=d4>Me</button></div>";
   ["rooms","issues","staff","me","meals","desk"].forEach(function(name,i){
     var ids=["d1","d2","d3","d4","d5","d6"];
     document.getElementById(ids[i]).onclick=function(){tab=isLaundry()&&name==="issues"?"laundry":name;roomId=null;draw();};
