@@ -1,0 +1,10 @@
+{
+  "name": "Posh Certify — Posh Hotels & Suites Nigeria",
+  "short_name": "Posh Certify",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1c332c",
+  "theme_color": "#1c332c",
+  "icons": []
+}
