@@ -4,23 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
-<title>Posh Manager 32G</title>
+<title>Posh Manager 32H</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;color:#f4efe6;font-family:system-ui}
-#bar{padding:8px 10px;font-size:12px;font-weight:700;background:#c4a574;color:#101512;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#bar{padding:8px 10px;font-size:12px;font-weight:700;background:#c4a574;color:#101512}
+#msg{display:block;margin-bottom:6px}
+#acts{display:none;gap:6px;flex-wrap:wrap}
+#acts.on{display:flex}
 #bar button{border:0;border-radius:999px;padding:8px 12px;background:#101512;color:#fff;font-weight:700}
-#msg{flex:1 1 100%;font-size:12px}
-iframe{position:fixed;top:78px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 78px);border:0}
+iframe{position:fixed;top:52px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 52px);border:0}
+iframe.tall{top:96px;height:calc(100% - 96px)}
 </style>
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 32G — loading…</span>
-  <button type=button id=barIn>Clock in</button>
-  <button type=button id=barOut>Clock out</button>
+  <span id=msg>POSH MANAGER 32H — loading…</span>
+  <div id=acts>
+    <button type=button id=barIn>Clock in</button>
+    <button type=button id=barOut>Clock out</button>
+  </div>
 </div>
 <script>
-var V="20260831G"+Date.now();
+var V="20260831H"+Date.now();
 var frame;
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
@@ -43,31 +48,48 @@ function clocked(w){
   }
   return null;
 }
+function paintBar(){
+  var w=win();
+  var acts=document.getElementById("acts");
+  var fr=frame;
+  if(!w||!w.user||w.user.role!=="frontdesk"){
+    acts.className="";
+    if(fr)fr.className="";
+    if(w&&w.user)say(w.user.name+" · "+(w.user.site||"")+" · clock is Front Desk only");
+    return;
+  }
+  acts.className="on";
+  if(fr)fr.className="tall";
+  var site=w.user.site||"your site";
+  var c=clocked(w);
+  document.getElementById("barIn").textContent="Clock in · "+site;
+  document.getElementById("barOut").textContent="Clock out · "+site;
+  say(c?("On duty · "+site+" · "+c.inAt):("Front Desk · "+site+" · not clocked in"));
+}
 document.getElementById("barIn").onclick=function(){
   var w=win();
-  if(!w||!w.user){alert("Open the app and log in as Front Desk first");return;}
-  if(w.user.role!=="frontdesk"){alert("Clock in is for Front Desk. You are logged in as "+w.user.role);return;}
-  if(clocked(w)){alert("Already on duty since "+clocked(w).inAt);return;}
+  if(!w||!w.user||w.user.role!=="frontdesk"){alert("Only the Front Desk login for this hotel can clock in.");return;}
+  if(clocked(w)){alert("Already on duty at "+w.user.site+" since "+clocked(w).inAt);return;}
   if(!w.db.clocks)w.db.clocks=[];
   var now=new Date().toLocaleTimeString();
-  w.db.clocks.push({id:"ck"+Date.now(),day:w.today(),site:w.workSite(),by:w.user.name,byId:w.user.id,shift:w.user.shift||"",inAt:now,outAt:""});
+  w.db.clocks.push({id:"ck"+Date.now(),day:w.today(),site:w.user.site||w.workSite(),by:w.user.name,byId:w.user.id,shift:w.user.shift||"",inAt:now,outAt:""});
   try{w.save();}catch(e){}
   w.__poshForceDraw=true;w.__poshTyping=0;
   try{w.draw();}catch(e){}
-  say("On duty from "+now);
-  alert("Clocked in at "+now);
+  paintBar();
+  alert("Clocked in at "+w.user.site+" \n"+now);
 };
 document.getElementById("barOut").onclick=function(){
   var w=win();
-  if(!w||!w.user){alert("Log in first");return;}
+  if(!w||!w.user||w.user.role!=="frontdesk"){alert("Only Front Desk can clock out.");return;}
   var c=clocked(w);
   if(!c){alert("You are not clocked in");return;}
   c.outAt=new Date().toLocaleTimeString();
   try{w.save();}catch(e){}
   w.__poshForceDraw=true;w.__poshTyping=0;
   try{w.draw();}catch(e){}
-  say("Clocked out at "+c.outAt);
-  alert("Clocked out at "+c.outAt);
+  paintBar();
+  alert("Clocked out at "+w.user.site+" \n"+c.outAt);
 };
 function start(){
   frame=document.createElement("iframe");
@@ -75,7 +97,7 @@ function start(){
   frame.src="app.html?v="+V;
   frame.onload=function(){
     var w=win();
-    if(!w){say("32G failed to open app");return;}
+    if(!w){say("32H failed to open app");return;}
     loadInto(w,"desk.js")
       .then(function(){return loadInto(w,"fdclock.js");})
       .then(function(){return loadInto(w,"clock.js");})
@@ -84,12 +106,14 @@ function start(){
       .then(function(){return loadInto(w,"evidence.js");})
       .then(function(){return loadInto(w,"sync.js");})
       .then(function(){
-        say("32G READY — log in Front Desk, then tap Clock in on this gold bar");
+        say("32H READY");
         try{if(w.draw)w.draw();}catch(e){}
-      }).catch(function(err){say("32G failed: "+err);});
+        paintBar();
+      }).catch(function(err){say("32H failed: "+err);});
   };
   document.body.appendChild(frame);
 }
+setInterval(paintBar,1000);
 if(navigator.serviceWorker){
   navigator.serviceWorker.getRegistrations().then(function(list){
     return Promise.all(list.map(function(r){return r.unregister();}));
