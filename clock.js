@@ -1,5 +1,8 @@
 (function(){
-if(typeof db==="undefined")return;
+function boot(){
+if(typeof db==="undefined"||typeof bind!=="function"){setTimeout(boot,60);return;}
+if(window.__poshClock)return;
+window.__poshClock=true;
 if(!db.clocks)db.clocks=[];
 if(!db.fdChecks)db.fdChecks=[];
 var OPEN_SEED=["Cash float counted and recorded","Keys / key cards collected","In-house occupancy reviewed","Expected arrivals reviewed","Expected departures / check-outs reviewed","Handover notes from last shift read","POS, printer and phone tested","Desk and uniform ready","Incident book checked","Duty manager informed I am on duty"];
@@ -17,10 +20,12 @@ function editLists(){
   if(!isSuper())return "";
   return "<div class=card><h3>Edit front desk checklists</h3><p>One item per line.</p><p>Opening</p><textarea id=editOpen>"+openList().join("\n")+"</textarea><p>Closing</p><textarea id=editClose>"+closeList().join("\n")+"</textarea><button class=btn id=saveLists>Save checklists</button></div>";
 }
+function canSeeClock(){
+  return !!(user&&(isFD()||mgr()||isSuper()||isGM()||(typeof isAcct==="function"&&isAcct())));
+}
 function clockBox(){
-  if(!user)return "";
+  if(!canSeeClock())return "";
   if(!isFD()){
-    if(!(mgr()||isSuper()||isGM()))return "";
     var list=todayClocks().slice().reverse().map(function(c){
       return "<p><b>"+c.by+"</b> · "+c.site+" · in "+c.inAt+(c.outAt?(" · out "+c.outAt):" · ON DUTY")+"</p>";
     }).join("");
@@ -45,16 +50,25 @@ function clockBox(){
   if(closed)form+="<div class=ok>Closing checklist submitted at "+closed.at+(closed.seen?(" · seen by "+closed.seenBy):" · waiting for duty manager")+".</div>";
   return "<div class=card><h3>Shift clock</h3>"+clock+"</div>"+form;
 }
-var _viewDesk=typeof viewDesk==="function"?viewDesk:function(){return "";};
-viewDesk=function(){return clockBox()+_viewDesk();};
-var _viewBoardC=typeof viewBoard==="function"?viewBoard:function(){return "";};
-viewBoard=function(){return (isFD()?clockBox():"")+_viewBoardC();};
-var _viewStaff2=viewStaff;
-viewStaff=function(){
-  var html=_viewStaff2();
-  if(mgr()||isSuper()||isGM()||isFD())return clockBox()+html;
-  return html;
-};
+window.clockBox=clockBox;
+function wrap(name){
+  var prev=typeof window[name]==="function"?window[name]:(typeof this[name]==="function"?this[name]:null);
+  if(typeof eval(name)!=="function"&&!prev)return;
+}
+function attach(fnName){
+  var prev;
+  try{prev=eval(fnName);}catch(e){return;}
+  if(typeof prev!=="function")return;
+  if(prev.__withClock)return;
+  var wrapped=function(){return clockBox()+prev.apply(this,arguments);};
+  wrapped.__withClock=true;
+  try{eval(fnName+"=wrapped");}catch(e){}
+}
+attach("viewDesk");
+attach("viewBoard");
+attach("viewStaff");
+attach("viewMe");
+setTimeout(function(){attach("viewDesk");attach("viewBoard");attach("viewStaff");attach("viewMe");try{draw();}catch(e){};},400);
 function collect(sel,list){
   var items=[];
   document.querySelectorAll(sel).forEach(function(box){
@@ -121,4 +135,6 @@ bind=function(){
   });
 };
 try{draw();}catch(e){}
+}
+boot();
 })();
