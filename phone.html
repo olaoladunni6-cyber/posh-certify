@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-store">
-<title>Posh Manager 32L</title>
+<title>Posh Manager 32M</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;color:#f4efe6;font-family:system-ui}
 #bar{padding:8px 10px;font-size:12px;font-weight:700;background:#c4a574;color:#101512}
@@ -19,19 +18,22 @@ iframe.tall{top:126px;height:calc(100% - 126px)}
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 32L — loading…</span>
+  <span id=msg>POSH MANAGER 32M — loading…</span>
   <div id=acts>
     <button type=button id=barIn>Clock in</button>
     <button type=button id=barOpen>Submit opening</button>
     <button type=button id=barClose>Submit closing</button>
     <button type=button id=barOut>Clock out</button>
     <button type=button id=barAck>Acknowledge list</button>
+    <button type=button id=barPub>Publish folios</button>
+    <button type=button id=barPull>Refresh hotel</button>
     <label class=btn id=barVidLab>Attach video<input id=barVid type=file accept="video/*" capture="environment"></label>
     <button type=button id=barSendRoom>Submit room</button>
   </div>
 </div>
+<script src="phone-bar.js?v=20260831M"></script>
 <script>
-var V="20260831L"+Date.now();
+var V="20260831M"+Date.now();
 var frame;
 var OPEN=["Cash float counted and recorded","Keys / key cards collected","In-house occupancy reviewed","Expected arrivals reviewed","Expected departures / check-outs reviewed","Handover notes from last shift read","POS, printer and phone tested","Desk and uniform ready","Incident book checked","Duty manager informed I am on duty"];
 var CLOSE=["Cash float counted and handed over","Keys / key cards returned","Shift sales / folios completed","In-house and expected guests updated","Handover notes written for next shift","Incidents recorded","POS closed / printer cleared","Desk left tidy","Duty manager informed shift has ended"];
@@ -45,92 +47,54 @@ function check(w,kind){if(!w.user||!w.db||!w.db.fdChecks)return null;var day=day
 function unseen(w){if(!w.db||!w.db.fdChecks||!w.user)return [];return w.db.fdChecks.filter(function(c){return !c.seen&&c.day===dayOf(w)&&(w.user.role==="superadmin"||w.user.role==="ceo"||c.site===w.user.site);});}
 function ticks(w,sel,list){var out=[],boxes=w.document.querySelectorAll(sel);for(var i=0;i<boxes.length;i++){if(!boxes[i].checked)continue;var n=parseInt(boxes[i].getAttribute("data-i"),10);if(list[n])out.push(list[n]);}return out;}
 function refresh(w){try{w.save();}catch(e){}w.__poshForceDraw=true;w.__poshTyping=0;try{w.draw();}catch(e){}paintBar();}
-function hideAll(){["barIn","barOpen","barClose","barOut","barAck","barVidLab","barSendRoom"].forEach(function(id){document.getElementById(id).style.display="none";});}
+function hideAll(){["barIn","barOpen","barClose","barOut","barAck","barPub","barPull","barVidLab","barSendRoom"].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display="none";});}
 function paintBar(){
   var w=win(),acts=document.getElementById("acts"),fr=frame;hideAll();
   if(!w||!w.user){acts.className="";if(fr)fr.className="";return;}
-  var role=w.user.role,site=w.user.site||"";
+  var role=w.user.role,site=w.user.site||"",n=(w.db.checkins||[]).length;
   acts.className="on";if(fr)fr.className="tall";
+  document.getElementById("barPub").style.display="inline-block";
+  document.getElementById("barPull").style.display="inline-block";
   if(role==="frontdesk"){
     var on=clocked(w),op=check(w,"open"),cl=check(w,"close");
-    if(!on&&!cl){document.getElementById("barIn").style.display="inline-block";document.getElementById("barIn").textContent="Clock in · "+site;say("Front Desk · "+site);}
-    else if(on&&!op){document.getElementById("barOpen").style.display="inline-block";say("Tick opening list, then Submit opening");}
-    else if(on&&op&&!cl){document.getElementById("barClose").style.display="inline-block";document.getElementById("barOut").style.display="inline-block";say("Opening sent");}
-    else say("Shift closed · "+site);
-    return;
+    if(!on&&!cl)document.getElementById("barIn").style.display="inline-block";
+    else if(on&&!op)document.getElementById("barOpen").style.display="inline-block";
+    else if(on&&op&&!cl){document.getElementById("barClose").style.display="inline-block";document.getElementById("barOut").style.display="inline-block";}
+    say("Front Desk · "+site+" · "+n+" folio(s) on this phone");return;
   }
   if(role==="manager"){
-    var u=unseen(w);
-    if(u.length){document.getElementById("barAck").style.display="inline-block";document.getElementById("barAck").textContent="Acknowledge "+u.length;}
-    say("Duty manager · "+site+" · Staff tab shows folios");return;
+    var u=unseen(w);if(u.length){document.getElementById("barAck").style.display="inline-block";document.getElementById("barAck").textContent="Acknowledge "+u.length;}
+    say("Duty manager · "+site+" · "+n+" folio(s). Tap Refresh hotel");return;
   }
   if(role==="housekeeper"&&w.roomId){
     document.getElementById("barVidLab").style.display="inline-block";
     document.getElementById("barSendRoom").style.display="inline-block";
-    say("Room open · attach video then Submit room");return;
+    say("Attach video then Submit room");return;
   }
-  if(role==="ceo"||role==="superadmin")say(w.user.name+" · Rooms and Staff show today's folios");
-  else {acts.className="";if(fr)fr.className="";say(w.user.name+" · "+site);}
+  say(w.user.name+" · "+n+" folio(s). Tap Refresh hotel");
 }
-document.getElementById("barIn").onclick=function(){
-  var w=win();if(!w||!w.user||w.user.role!=="frontdesk")return;
-  if(clocked(w))return;if(!w.db.clocks)w.db.clocks=[];
-  var now=new Date().toLocaleTimeString();
-  w.db.clocks.push({id:"ck"+Date.now(),day:dayOf(w),site:w.user.site,by:w.user.name,byId:w.user.id,shift:w.user.shift||"",inAt:now,outAt:""});
-  refresh(w);alert("Clocked in at "+now);
-};
-document.getElementById("barOpen").onclick=function(){
-  var w=win();if(!w||!clocked(w)||check(w,"open"))return;
-  var list=listOf(w,"open");var items=ticks(w,".fdOpenTick",list);if(items.length<list.length){if(!confirm("Submit opening anyway?"))return;items=list.slice();}
-  if(!w.db.fdChecks)w.db.fdChecks=[];
-  w.db.fdChecks.push({id:"fc"+Date.now(),day:dayOf(w),site:w.user.site,kind:"open",by:w.user.name,byId:w.user.id,items:items,note:"",at:new Date().toLocaleString(),seen:false,seenBy:""});
-  refresh(w);alert("Opening checklist submitted to duty manager");
-};
-document.getElementById("barClose").onclick=function(){
-  var w=win();var ck=clocked(w);if(!ck||!check(w,"open"))return;
-  var list=listOf(w,"close");var items=ticks(w,".fdCloseTick",list);if(items.length<list.length){if(!confirm("Submit closing anyway?"))return;items=list.slice();}
-  ck.outAt=new Date().toLocaleTimeString();
-  if(!w.db.fdChecks)w.db.fdChecks=[];
-  w.db.fdChecks.push({id:"fc"+Date.now(),day:dayOf(w),site:w.user.site,kind:"close",by:w.user.name,byId:w.user.id,items:items,note:"",at:new Date().toLocaleString(),seen:false,seenBy:""});
-  refresh(w);alert("Closed at "+ck.outAt);
-};
+document.getElementById("barIn").onclick=function(){var w=win();if(!w||w.user.role!=="frontdesk"||clocked(w))return;if(!w.db.clocks)w.db.clocks=[];w.db.clocks.push({id:"ck"+Date.now(),day:dayOf(w),site:w.user.site,by:w.user.name,byId:w.user.id,shift:w.user.shift||"",inAt:new Date().toLocaleTimeString(),outAt:""});refresh(w);};
+document.getElementById("barOpen").onclick=function(){var w=win();if(!w||!clocked(w)||check(w,"open"))return;var list=listOf(w,"open");var items=ticks(w,".fdOpenTick",list);if(items.length<list.length){if(!confirm("Submit opening anyway?"))return;items=list.slice();}if(!w.db.fdChecks)w.db.fdChecks=[];w.db.fdChecks.push({id:"fc"+Date.now(),day:dayOf(w),site:w.user.site,kind:"open",by:w.user.name,byId:w.user.id,items:items,note:"",at:new Date().toLocaleString(),seen:false,seenBy:""});refresh(w);alert("Opening sent");};
+document.getElementById("barClose").onclick=function(){var w=win();var ck=clocked(w);if(!ck||!check(w,"open"))return;var list=listOf(w,"close");var items=ticks(w,".fdCloseTick",list);if(items.length<list.length){if(!confirm("Submit closing anyway?"))return;items=list.slice();}ck.outAt=new Date().toLocaleTimeString();if(!w.db.fdChecks)w.db.fdChecks=[];w.db.fdChecks.push({id:"fc"+Date.now(),day:dayOf(w),site:w.user.site,kind:"close",by:w.user.name,byId:w.user.id,items:items,note:"",at:new Date().toLocaleString(),seen:false,seenBy:""});refresh(w);};
 document.getElementById("barOut").onclick=function(){document.getElementById("barClose").click();};
-document.getElementById("barAck").onclick=function(){
-  var w=win();if(!w||!w.user||w.user.role!=="manager"){alert("Duty manager only");return;}
-  var list=unseen(w);if(!list.length){alert("Nothing to acknowledge");return;}
-  list.forEach(function(c){c.seen=true;c.seenBy=w.user.name;});
-  refresh(w);alert("Acknowledged "+list.length+" checklist(s)");
+document.getElementById("barAck").onclick=function(){var w=win();if(!w||w.user.role!=="manager")return;var list=unseen(w);list.forEach(function(c){c.seen=true;c.seenBy=w.user.name;});refresh(w);alert("Acknowledged "+list.length);};
+document.getElementById("barPub").onclick=function(){
+  var w=win();if(!w)return;
+  if(typeof w.publishHotel==="function")w.publishHotel(function(ok,err){alert(ok?("Published "+(w.db.checkins||[]).length+" folio(s). Duty manager tap Refresh hotel."):("Publish failed: "+(err||"save GitHub token on Staff")));});
+  else alert("Open Staff and tap Publish this device now");
 };
-document.getElementById("barVid").onchange=function(){
-  var w=win(),f=this.files&&this.files[0];
-  if(!w||!w.user||w.user.role!=="housekeeper"){alert("Log in as housekeeper and open a room first");return;}
-  if(!w.roomId){alert("Open the room first");return;}
-  if(!f)return;
-  var r=w.db.rooms.filter(function(x){return x.id===w.roomId;})[0];
-  if(!r){alert("Room not found");return;}
-  var rd=new FileReader();
-  rd.onload=function(){
-    r.video=rd.result;if(!r.photos)r.photos={};r.photos.Walkthrough=rd.result;
-    try{w.save();}catch(e){}
-    w.__poshForceDraw=true;try{w.draw();}catch(e){}
-    alert("Video attached to Room "+r.number);
-  };
-  rd.readAsDataURL(f);
+document.getElementById("barPull").onclick=function(){
+  var w=win();if(!w)return;
+  if(typeof w.refreshHotel==="function")w.refreshHotel(function(ok){alert(ok?("Hotel refreshed. Folios now "+(w.db.checkins||[]).length):"Could not refresh");w.__poshForceDraw=true;try{w.draw();}catch(e){}paintBar();});
+  else alert("Refresh from Staff");
 };
-document.getElementById("barSendRoom").onclick=function(){
-  var w=win();if(!w||!w.user||w.user.role!=="housekeeper")return;
-  var r=w.db.rooms.filter(function(x){return x.id===w.roomId;})[0];
-  if(!r){alert("Open the room first");return;}
-  var has=r.video||(r.photos&&r.photos.Walkthrough);
-  if(!has){alert("Attach the walkthrough video first");return;}
-  if(!r.laundryChecked){alert("Save fixture / laundry counts in the room first");return;}
-  r.status="submitted";refresh(w);alert("Room "+r.number+" submitted to duty manager");
-};
+document.getElementById("barVid").onchange=function(){var w=win(),f=this.files&&this.files[0];if(!w||!w.roomId||!f)return;var r=w.db.rooms.filter(function(x){return x.id===w.roomId;})[0];if(!r)return;var rd=new FileReader();rd.onload=function(){r.video=rd.result;if(!r.photos)r.photos={};r.photos.Walkthrough=rd.result;try{w.save();}catch(e){}alert("Video attached to Room "+r.number);};rd.readAsDataURL(f);};
+document.getElementById("barSendRoom").onclick=function(){var w=win();var r=w.db.rooms.filter(function(x){return x.id===w.roomId;})[0];if(!r){alert("Open the room");return;}if(!(r.video||(r.photos&&r.photos.Walkthrough))){alert("Attach video first");return;}if(!r.laundryChecked){alert("Save counts first");return;}r.status="submitted";refresh(w);alert("Room submitted");};
 function start(){
   frame=document.createElement("iframe");frame.setAttribute("allow","notifications; camera; microphone");frame.src="app.html?v="+V;
   frame.onload=function(){
-    var w=win();if(!w){say("32L failed");return;}
-    loadInto(w,"desk.js").then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("32L READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("32L failed: "+err);});
+    var w=win();if(!w){say("32M failed");return;}
+    loadInto(w,"desk.js").then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("32M READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("32M failed: "+err);});
   };
   document.body.appendChild(frame);
 }
