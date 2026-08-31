@@ -30,6 +30,7 @@ function myOpenClock(){return (db.clocks||[]).filter(function(c){return c.day===
 function todayCheck(uid,kind){return (db.fdChecks||[]).filter(function(c){return c.day===today()&&c.byId===uid&&c.kind===kind;})[0];}
 function checksToday(){return (db.fdChecks||[]).filter(function(c){return c.day===today()&&siteMatch(c.site);}).slice().reverse();}
 function clockBox(){
+  if(!user)return "";
   if(!isFD()){
     if(!(mgr()||isSuper()||isGM()))return "";
     var list=todayClocks().slice().reverse().map(function(c){
@@ -60,12 +61,14 @@ function clockBox(){
   if(closed)form+="<div class=ok>Closing checklist submitted at "+closed.at+(closed.seen?(" · seen by "+closed.seenBy):" · waiting for duty manager")+".</div>";
   return "<div class=card><h3>Shift clock</h3>"+clock+"</div>"+form;
 }
-var _viewDesk=typeof viewDesk==="function"?viewDesk:null;
-if(_viewDesk)viewDesk=function(){return clockBox()+_viewDesk();};
+var _viewDesk=typeof viewDesk==="function"?viewDesk:function(){return "";};
+viewDesk=function(){return clockBox()+_viewDesk();};
+var _viewBoardC=typeof viewBoard==="function"?viewBoard:function(){return "";};
+viewBoard=function(){return (isFD()?clockBox():"")+_viewBoardC();};
 var _viewStaff2=viewStaff;
 viewStaff=function(){
   var html=_viewStaff2();
-  if(mgr()||isSuper()||isGM())return clockBox()+html;
+  if(mgr()||isSuper()||isGM()||isFD())return clockBox()+html;
   return html;
 };
 function collect(sel,list){
@@ -101,8 +104,8 @@ bind=function(){
     if(typeof pingMgrGm==="function")pingMgrGm("POSH OPENING CHECKLIST\n"+user.name+"\n"+workSite()+"\n"+items.join("\n")+(note?("\nNotes: "+note):""));
     draw();
   };
-  var close=document.getElementById("sendFDClose");
-  if(close)close.onclick=function(){
+  var closeBtn=document.getElementById("sendFDClose");
+  if(closeBtn)closeBtn.onclick=function(){
     if(!isFD())return;
     var ck=myOpenClock();
     if(!ck){alert("You are not clocked in");return;}
