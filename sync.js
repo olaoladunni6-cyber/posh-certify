@@ -9,7 +9,21 @@ var lastStamp="";
 function token(){return (localStorage.getItem(TOKEN_KEY)||"").trim();}
 function setToken(t){t=String(t||"").trim();if(t)localStorage.setItem(TOKEN_KEY,t);}
 function onlyPin(s){return String(s||"").replace(/\D/g,"");}
-function stampOf(x){return String((x&&x.updated)||"")+"|"+(x&&x.users?x.users.length:0)+"|"+(x&&x.rooms?x.rooms.length:0)+"|"+(x&&x.issues?x.issues.length:0)+"|"+(x&&x.shiftReports?x.shiftReports.length:0);}
+function unionById(a,b){
+  var m={};
+  (a||[]).concat(b||[]).forEach(function(x){if(x&&x.id)m[x.id]=x;});
+  return Object.keys(m).map(function(k){return m[k];});
+}
+function slim(src){
+  var x=JSON.parse(JSON.stringify(src||db));
+  (x.rooms||[]).forEach(function(r){
+    r.photos={};r.video="";
+  });
+  return x;
+}
+function stampOf(x){
+  return String((x&&x.updated)||"")+"|c"+(x&&x.checkins?x.checkins.length:0)+"|u"+(x&&x.users?x.users.length:0)+"|r"+(x&&x.rooms?x.rooms.length:0)+"|k"+(x&&x.clocks?x.clocks.length:0);
+}
 function notify(title,body){
   if(!("Notification" in window))return;
   if(Notification.permission!=="granted")return;
@@ -32,12 +46,24 @@ function homeTab(){
 }
 function applyRemote(x){
   if(!x||!x.users||!x.users.length)return false;
-  var st=stampOf(x);
-  var changed=lastStamp&&st!==lastStamp;
+  var keep={checkins:db.checkins,clocks:db.clocks,fdChecks:db.fdChecks,debts:db.debts,shiftReports:db.shiftReports,rooms:db.rooms};
   db=x;
+  db.checkins=unionById(x.checkins,keep.checkins);
+  db.clocks=unionById(x.clocks,keep.clocks);
+  db.fdChecks=unionById(x.fdChecks,keep.fdChecks);
+  db.debts=unionById(x.debts,keep.debts);
+  db.shiftReports=unionById(x.shiftReports,keep.shiftReports);
+  if(keep.rooms&&keep.rooms.length){
+    var map={};
+    keep.rooms.forEach(function(r){map[r.id]=r;});
+    (db.rooms||[]).forEach(function(r){
+      if(map[r.id]&&map[r.id].status&&map[r.id].status!=="pending"){
+        if(!r.status||r.status==="pending")r.status=map[r.id].status;
+      }
+    });
+  }
   try{localStorage.setItem(typeof KEY==="string"?KEY:"posh-full-v13",JSON.stringify(db));}catch(e){}
-  if(changed)notify("Posh Manager","Hotel list updated");
-  lastStamp=st;
+  lastStamp=stampOf(db);
   return true;
 }
 function headers(write){
@@ -63,13 +89,14 @@ function pushCloud(done){
   if(pushing){if(done)done(false,"Busy");return;}
   pushing=true;
   db.updated=new Date().toISOString();
+  var payload=slim(db);
   fetch(API,{headers:headers(false)}).then(function(r){
     if(!r.ok)throw new Error("read "+r.status);
     return r.json();
   }).then(function(meta){
     var body=JSON.stringify({
-      message:"Posh Manager live hotel "+db.updated,
-      content:btoa(unescape(encodeURIComponent(JSON.stringify(db)))),
+      message:"Posh Manager live hotel "+payload.updated+" folios "+(payload.checkins||[]).length,
+      content:btoa(unescape(encodeURIComponent(JSON.stringify(payload)))),
       sha:meta.sha
     });
     return fetch(API,{method:"PUT",headers:headers(true),body:body});
@@ -86,16 +113,16 @@ function pushCloud(done){
 var _save=save;
 save=function(){
   _save();
-  if(token()&&!typing())pushCloud();
+  if(token())pushCloud();
 };
 function cloudBox(){
   var on=!!token();
-  var perm=("Notification" in window)?Notification.permission:"denied";
+  var n=(db.checkins||[]).length;
   return "<div class=card><h3>Shared hotel</h3>"+
-    "<p>"+(on?"This device can publish to all phones.":"Paste the GitHub token once so this device can publish.")+"</p>"+
+    "<p>"+(on?"This device can publish to all phones.":"Paste the GitHub token once so folios leave this phone.")+"</p>"+
+    "<p>Folios on this phone: <b>"+n+"</b></p>"+
     "<input id=ghTok type=password placeholder='GitHub token'><button class=btn id=saveTok>Save token</button>"+
-    "<p><button class=btn id=pullCloud>Refresh from shared list</button> <button class=btn id=pushCloud>Publish this device now</button></p>"+
-    (perm==="granted"?"<p>Phone alerts are on.</p>":"<p><button class=btn id=allowAlert>Allow phone alerts</button></p>")+"</div>";
+    "<p><button class=btn id=pullCloud>Refresh from shared list</button> <button class=btn id=pushCloud>Publish this device now</button></p></div>";
 }
 function hookCloud(){
   var saveTok=document.getElementById("saveTok");
@@ -103,7 +130,7 @@ function hookCloud(){
     var v=(document.getElementById("ghTok").value||"").trim();
     if(!v){alert("Paste the token first");return;}
     setToken(v);
-    alert("Token saved on this device. Tap Publish this device now.");
+    alert("Token saved. Tap Publish this device now.");
     window.__poshForceDraw=true;draw();
   };
   var pull=document.getElementById("pullCloud");
@@ -111,31 +138,21 @@ function hookCloud(){
   var push=document.getElementById("pushCloud");
   if(push)push.onclick=function(){
     if(!token()){alert("Save the GitHub token on this device first");return;}
-    pushCloud(function(ok,err){alert(ok?"Published. Other phones can Refresh.":("Publish failed. "+(err||"")));});
-  };
-  var al=document.getElementById("allowAlert");
-  if(al)al.onclick=function(){
-    if(!("Notification" in window)){alert("This phone cannot show banners");return;}
-    Notification.requestPermission().then(function(p){
-      if(p==="granted")notify("Posh Manager","Alerts are on");
-      window.__poshForceDraw=true;draw();
-    });
+    pushCloud(function(ok,err){alert(ok?("Published "+(db.checkins||[]).length+" folio(s)."):("Publish failed. "+(err||"")));});
   };
   var pinok=document.getElementById("pinok");
   if(pinok)pinok.onclick=function(){
     var typed=onlyPin(document.getElementById("pinbox").value);
     var want=onlyPin(pending&&pending.pin);
     if(typed&&want&&typed===want){
-      user=pending;pending=null;
-      tab=homeTab();
-      roomId=null;window.__poshForceDraw=true;draw();
+      user=pending;pending=null;tab=homeTab();roomId=null;window.__poshForceDraw=true;draw();
     }else alert("Wrong PIN.");
   };
 }
 var _vsC=viewStaff;
 viewStaff=function(){
   var html=_vsC();
-  if(user&&user.role==="superadmin")return cloudBox()+html;
+  if(user&&(user.role==="superadmin"||user.role==="frontdesk"||user.role==="manager"||user.role==="ceo"))return cloudBox()+html;
   return html;
 };
 var _bC=bind;
