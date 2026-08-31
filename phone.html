@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en-NG">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>Posh Manager Phone</title>
+<style>html,body{margin:0;height:100%;background:#1c332c;color:#f4efe6;font-family:system-ui}#msg{padding:24px}iframe{position:fixed;inset:0;width:100%;height:100%;border:0}</style>
+</head>
+<body>
+<p id=msg>Opening Posh Manager on phone…</p>
+<script>
+var V="20260831P";
+function start(){
+  var f=document.createElement("iframe");
+  f.src="app.html?v="+V+"&p=1";
+  f.onload=function(){
+    var d=f.contentDocument;
+    if(!d||!d.body){document.getElementById("msg").textContent="Could not open app on this phone.";return;}
+    function add(src,next){
+      var s=d.createElement("script");
+      s.src=src+"?v="+V;
+      s.onload=next||function(){};
+      s.onerror=next||function(){};
+      d.body.appendChild(s);
+    }
+    add("desk.js",function(){add("loss.js",function(){add("fixtures.js");});});
+    var msg=document.getElementById("msg");
+    if(msg)msg.remove();
+  };
+  document.body.appendChild(f);
+}
+if(navigator.serviceWorker){
+  navigator.serviceWorker.getRegistrations().then(function(list){
+    return Promise.all(list.map(function(r){return r.unregister();}));
+  }).then(function(){
+    if(window.caches)return caches.keys().then(function(k){return Promise.all(k.map(function(x){return caches.delete(x);}));});
+  }).then(start).catch(start);
+}else start();
+</script>
+</body>
+</html>
