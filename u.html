@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-store">
-<title>Posh Manager 32A</title>
+<title>Posh Manager 32B</title>
 <style>
 html,body{margin:0;background:#1c332c}
 #boot{margin:0;padding:10px 14px;background:#0d1613;color:#f4efe6;font:13px system-ui}
@@ -16,7 +16,7 @@ html,body{margin:0;background:#1c332c}
 </style>
 </head>
 <body>
-<p id=boot>Posh Manager 32A — loading…</p>
+<p id=boot>Posh Manager 32B — loading…</p>
 <div id="app"></div>
 <script>
 (function(){
@@ -29,7 +29,7 @@ html,body{margin:0;background:#1c332c}
     s.onerror=function(){ boot.textContent="Failed to load "+src; };
     document.body.appendChild(s);
   }
-  fetch("app.html?v=32A"+Date.now(),{cache:"reload"}).then(function(r){
+  fetch("app.html?v=32B"+Date.now(),{cache:"reload"}).then(function(r){
     if(!r.ok)throw new Error(r.status);
     return r.text();
   }).then(function(html){
@@ -46,11 +46,13 @@ html,body{margin:0;background:#1c332c}
     var s=document.createElement("script");
     s.textContent=code;
     document.body.appendChild(s);
-    addSrc("desk.js?v=32A",function(){
-      addSrc("loss.js?v=32A",function(){
-        addSrc("fixtures.js?v=32A",function(){
-          addSrc("sync.js?v=32A",function(){
-            boot.textContent="Posh Manager 32A — ready";
+    addSrc("desk.js?v=32B",function(){
+      addSrc("clock.js?v=32B",function(){
+        addSrc("loss.js?v=32B",function(){
+          addSrc("fixtures.js?v=32B",function(){
+            addSrc("sync.js?v=32B",function(){
+              boot.textContent="Posh Manager 32B — ready";
+            });
           });
         });
       });
