@@ -4,33 +4,49 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-store">
-<title>Posh Manager Full</title>
-<style>body{margin:0;font-family:system-ui,sans-serif;background:#0d1613;max-width:480px;margin:0 auto}h1{font-family:Georgia,serif}.wrap{background:#f4efe6;min-height:100vh;padding:16px 16px 96px}.top{background:#1c332c;color:#f4efe6;padding:14px 16px;display:flex;justify-content:space-between}.btn{border:0;border-radius:999px;padding:10px 14px;background:#c4a574;margin:4px 4px 0 0}.btn.bad{background:#8c3a32;color:#fff}.btn.dark{background:#101512;color:#fff}.card,.room,.acct{background:#fff;border-radius:14px;padding:12px;margin:8px 0;border:0;width:100%;text-align:left}.ok{background:#dcebe3;padding:10px;border-radius:12px}.warn{background:#f3e6c8;padding:10px;border-radius:12px}textarea,input,select{width:100%;padding:10px;margin:6px 0;border-radius:10px;border:1px solid #ddd;box-sizing:border-box}p{margin:8px 0 0}textarea{min-height:64px}.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #eee}.row input{width:64px;margin:0}.qty{font-weight:700;color:#8c3a32}video,img.media{width:100%;max-height:180px;border-radius:10px;object-fit:cover}.dock{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;display:flex;justify-content:space-around;padding:8px;font-size:12px}.login{min-height:100vh;color:#fff;padding:28px 18px;background:#1c332c}</style>
+<title>Posh Manager Full 31T</title>
+<style>body{margin:0;font-family:system-ui,sans-serif;background:#0d1613;color:#f4efe6}#boot{padding:16px}</style>
 </head>
 <body>
-<p id=boot style="color:#f4efe6;padding:16px">Posh Manager full 31T — loading…</p>
+<p id=boot>Posh Manager full 31T — loading…</p>
 <div id="app"></div>
-<script src="app.html?v=31T"></script>
 <script>
 (function(){
   var boot=document.getElementById("boot");
-  function add(src,next){
+  function addSrc(src,next){
     var s=document.createElement("script");
     s.src=src;
-    s.onload=next;
-    s.onerror=function(){if(boot)boot.textContent="Failed "+src;};
+    s.onload=function(){ if(next)next(); };
+    s.onerror=function(){ boot.textContent="Failed to load "+src; };
     document.body.appendChild(s);
   }
-  function go(){
-    add("desk.js?v=31T",function(){
-      add("loss.js?v=31T",function(){
-        add("fixtures.js?v=31T",function(){
-          if(boot)boot.textContent="Posh Manager full 31T — ready";
+  fetch("app.html?v=31T"+Date.now(),{cache:"reload"}).then(function(r){
+    if(!r.ok)throw new Error(r.status);
+    return r.text();
+  }).then(function(html){
+    var style=html.match(/<style>([\s\S]*?)<\/style>/);
+    if(style){
+      var st=document.createElement("style");
+      st.textContent=style[1];
+      document.head.appendChild(st);
+    }
+    var scripts=html.match(/<script>([\s\S]*?)<\/script>/);
+    if(!scripts)throw new Error("app script missing");
+    var code=scripts[1].replace("<h1>Posh Certify</h1>","<h1>Posh Manager</h1><p>Full 31T</p>");
+    code=code.replace("Certify NG","Posh Manager");
+    var s=document.createElement("script");
+    s.textContent=code;
+    document.body.appendChild(s);
+    addSrc("desk.js?v=31T",function(){
+      addSrc("loss.js?v=31T",function(){
+        addSrc("fixtures.js?v=31T",function(){
+          boot.textContent="Posh Manager full 31T — ready. Open Staff for backup.";
         });
       });
     });
-  }
-  setTimeout(go,400);
+  }).catch(function(e){
+    boot.textContent="Could not start: "+e;
+  });
 })();
 </script>
 </body>
