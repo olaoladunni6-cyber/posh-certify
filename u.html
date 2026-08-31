@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-store">
-<title>Posh Manager 31X</title>
+<title>Posh Manager 31Z</title>
 <style>
 html,body{margin:0;background:#1c332c}
 #boot{margin:0;padding:10px 14px;background:#0d1613;color:#f4efe6;font:13px system-ui}
@@ -13,11 +13,10 @@ html,body{margin:0;background:#1c332c}
 #app .top,#app .top span{color:#f4efe6 !important}
 #app .btn{color:#111 !important}
 #app .btn.bad,#app .btn.dark{color:#fff !important}
-#app .card h3{color:#111 !important}
 </style>
 </head>
 <body>
-<p id=boot>Posh Manager 31X — loading…</p>
+<p id=boot>Posh Manager 31Z — loading…</p>
 <div id="app"></div>
 <script>
 (function(){
@@ -29,7 +28,7 @@ html,body{margin:0;background:#1c332c}
     s.onerror=function(){ boot.textContent="Failed to load "+src; };
     document.body.appendChild(s);
   }
-  fetch("app.html?v=31X"+Date.now(),{cache:"reload"}).then(function(r){
+  fetch("app.html?v=31Z"+Date.now(),{cache:"reload"}).then(function(r){
     if(!r.ok)throw new Error(r.status);
     return r.text();
   }).then(function(html){
@@ -46,11 +45,11 @@ html,body{margin:0;background:#1c332c}
     var s=document.createElement("script");
     s.textContent=code;
     document.body.appendChild(s);
-    addSrc("desk.js?v=31X",function(){
-      addSrc("loss.js?v=31X",function(){
-        addSrc("fixtures.js?v=31X",function(){
-          addSrc("sync.js?v=31X",function(){
-            boot.textContent="Posh Manager 31X — ready";
+    addSrc("desk.js?v=31Z",function(){
+      addSrc("loss.js?v=31Z",function(){
+        addSrc("fixtures.js?v=31Z",function(){
+          addSrc("sync.js?v=31Z",function(){
+            boot.textContent="Posh Manager 31Z — ready";
           });
         });
       });
