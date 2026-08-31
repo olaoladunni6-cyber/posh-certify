@@ -4,33 +4,44 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-store">
-<title>Posh Manager 31Q</title>
+<title>Posh Manager 31R</title>
 <style>html,body{margin:0;height:100%;background:#1c332c;color:#f4efe6;font-family:system-ui}#bar{padding:10px 14px;font-size:13px;background:#0d1613}iframe{position:fixed;top:40px;left:0;right:0;bottom:0;width:100%;border:0}</style>
 </head>
 <body>
-<div id=bar>Posh Manager 31Q — starting…</div>
+<div id=bar>Posh Manager 31R — starting…</div>
 <script>
 (function(){
 var bar=document.getElementById("bar");
-var overlay=function(){return (
-"if(typeof db===\"undefined\")return;"+
-"if(!db.fxPar)db.fxPar={};"+
-"if(!db.fixtures)db.fixtures=[{id:\"fx_kettle\",name:\"Kettle\",par:1},{id:\"fx_teaspoon\",name:\"Teaspoon\",par:2},{id:\"fx_teacup\",name:\"Tea cup\",par:2},{id:\"fx_glass\",name:\"Glass cup\",par:2},{id:\"fx_mug\",name:\"Coffee mug\",par:2},{id:\"fx_ice\",name:\"Ice bucket\",par:1},{id:\"fx_tray\",name:\"Tray\",par:1},{id:\"fx_remote\",name:\"TV remote\",par:1},{id:\"fx_dryer\",name:\"Hair dryer\",par:1}];"+
-"function fxList(){return db.fixtures||[];}"+
-"function fxExpected(roomNo,id){var row=(db.fxPar||{})[String(roomNo)]||{};if(row[id]!=null&&String(row[id])!==\"\")return Number(row[id]||0);var it=fxList().filter(function(x){return x.id===id;})[0];return Number(it&&it.par!=null?it.par:0);}"+
-"function staffEditor(){var people=(db.users||[]).map(function(u){return \"<div class=card><b>\"+u.name+\"</b> · \"+roleName(u.role)+\" · \"+(u.site||\"\")+\"<br><input data-en='\"+u.id+\"' value='\"+u.name+\"'>\"+roleSel(\"er-\"+u.id,u.role)+locSel(\"es-\"+u.id,u.site)+\"<input data-pinfor='\"+u.id+\"' placeholder='New PIN'><input data-ew='\"+u.id+\"' value='\"+digits(u.whatsapp||\"\")+\"' placeholder='WhatsApp'><br><button class='btn saveU' data-id='\"+u.id+\"'>Save</button> <button class='btn bad delU' data-id='\"+u.id+\"'>Remove</button></div>\";}).join(\"\");return \"<h1>Staff</h1>\"+people+\"<div class=card><h3>Add staff</h3><input id=sn placeholder='Name'>\"+roleSel(\"sr\",\"housekeeper\")+locSel(\"ss\",\"Ikeja\")+\"<input id=sp placeholder='PIN'><button class=btn id=addStaff>Save staff</button></div>\";}"+
-"viewFixtures=function(){var rooms=(db.rooms||[]).slice().sort(function(a,b){return String(a.number).localeCompare(String(b.number),undefined,{numeric:true});});var rows=rooms.map(function(r){var cells=fxList().map(function(it){return \"<p>\"+it.name+\" — expected <input class=fxpt type=number min=0 data-room='\"+r.number+\"' data-item='\"+it.id+\"' value='\"+fxExpected(r.number,it.id)+\"'></p>\";}).join(\"\");return \"<div class=card><h3>Room \"+r.number+(r.site?\" · \"+r.site:\"\")+\"</h3>\"+cells+\"<button class='btn saveFxPar' data-room='\"+r.number+\"'>Save Room \"+r.number+\"</button></div>\";}).join(\"\");return \"<h1>Fixture expected by room number</h1>\"+rows+\"<div class=card><h3>Add fixture</h3><input id=fxname placeholder='Name'><input id=fxpar type=number min=0 value=1><button class=btn id=addFx>Save fixture</button></div>\";};"+
-"viewBackup=function(){return \"<div class=card><h3>Backup hotel data</h3><p>Download after every staff or room change. Keep the file off this phone.</p><button class=btn id=dlBak>Download backup</button><p>Restore</p><input type=file id=upBak accept='application/json,.json'><button class='btn dark' id=rsBak>Restore backup</button></div>\";};"+
-"var _vs=viewStaff;viewStaff=function(){if(user&&user.role===\"superadmin\")return viewBackup()+viewFixtures()+staffEditor();return _vs();};"+
-"var _b=bind;bind=function(){_b();var dl=document.getElementById(\"dlBak\");if(dl)dl.onclick=function(){var blob=new Blob([JSON.stringify(db)],{type:\"application/json\"});var a=document.createElement(\"a\");a.href=URL.createObjectURL(blob);a.download=\"posh-backup-\"+today()+\".json\";a.click();};var rs=document.getElementById(\"rsBak\");if(rs)rs.onclick=function(){var f=document.getElementById(\"upBak\").files[0];if(!f){alert(\"Choose a backup file\");return;}if(!confirm(\"Replace staff and rooms on this phone?\"))return;var rd=new FileReader();rd.onload=function(){try{var x=JSON.parse(rd.result);if(!x||!x.users)throw new Error(\"bad\");db=x;save();draw();}catch(e){alert(\"Not a valid backup\");}};rd.readAsText(f);};document.querySelectorAll(\".saveFxPar\").forEach(function(b){b.onclick=function(){if(!user||user.role!==\"superadmin\")return;var room=String(b.getAttribute(\"data-room\"));if(!db.fxPar)db.fxPar={};if(!db.fxPar[room])db.fxPar[room]={};document.querySelectorAll(\".fxpt[data-room='\"+room+\"']\").forEach(function(inp){var n=parseInt(inp.value,10);db.fxPar[room][inp.getAttribute(\"data-item\")]=n>=0?n:0;});save();alert(\"Saved Room \"+room);draw();};});var addFx=document.getElementById(\"addFx\");if(addFx)addFx.onclick=function(){var name=(document.getElementById(\"fxname\").value||\"\").trim();if(!name)return;db.fixtures.push({id:\"fx\"+Date.now(),name:name,par:parseInt(document.getElementById(\"fxpar\").value,10)||1});save();draw();};};"+
-"try{draw();}catch(e){}"
-);};
+function overlay(){
+return "(function(){\n"+
+"if(typeof db===\"undefined\")return;\n"+
+"if(!db.fxPar)db.fxPar={};\n"+
+"if(!db.fixtures||!db.fixtures.length)db.fixtures=[\n"+
+"{id:\"fx_kettle\",name:\"Kettle\",par:1},{id:\"fx_teaspoon\",name:\"Teaspoon\",par:2},\n"+
+"{id:\"fx_teacup\",name:\"Tea cup\",par:2},{id:\"fx_glass\",name:\"Glass cup\",par:2},\n"+
+"{id:\"fx_mug\",name:\"Coffee mug\",par:2},{id:\"fx_ice\",name:\"Ice bucket\",par:1},\n"+
+"{id:\"fx_tray\",name:\"Tray\",par:1},{id:\"fx_remote\",name:\"TV remote\",par:1},\n"+
+"{id:\"fx_dryer\",name:\"Hair dryer\",par:1}];\n"+
+"function fxList(){return db.fixtures||[];}\n"+
+"function fxExpected(roomNo,id){var row=(db.fxPar||{})[String(roomNo)]||{};if(row[id]!=null&&String(row[id])!==\"\")return Number(row[id]||0);var it=fxList().filter(function(x){return x.id===id;})[0];return Number(it&&it.par!=null?it.par:0);}\n"+
+"function staffEditor(){var people=(db.users||[]).map(function(u){return \"<div class=card><b>\"+u.name+\"</b> · \"+roleName(u.role)+\" · \"+(u.site||\"\")+\"<br><input data-en='\"+u.id+\"' value='\"+u.name+\"'>\"+roleSel(\"er-\"+u.id,u.role)+locSel(\"es-\"+u.id,u.site)+\"<input data-pinfor='\"+u.id+\"' placeholder='New PIN'><input data-ew='\"+u.id+\"' value='\"+digits(u.whatsapp||\"\")+\"' placeholder='WhatsApp'><br><button class='btn saveU' data-id='\"+u.id+\"'>Save</button> <button class='btn bad delU' data-id='\"+u.id+\"'>Remove</button></div>\";}).join(\"\");return \"<h1>Staff</h1>\"+people+\"<div class=card><h3>Add staff</h3><input id=sn placeholder='Name'>\"+roleSel(\"sr\",\"housekeeper\")+locSel(\"ss\",\"Ikeja\")+\"<input id=sp placeholder='PIN'><button class=btn id=addStaff>Save staff</button></div>\";}\n"+
+"viewFixtures=function(){var rooms=(db.rooms||[]).slice().sort(function(a,b){return String(a.number).localeCompare(String(b.number),undefined,{numeric:true});});var rows=rooms.map(function(r){var cells=fxList().map(function(it){return \"<p>\"+it.name+\" — expected <input class=fxpt type=number min=0 data-room='\"+r.number+\"' data-item='\"+it.id+\"' value='\"+fxExpected(r.number,it.id)+\"'></p>\";}).join(\"\");return \"<div class=card><h3>Room \"+r.number+(r.site?\" · \"+r.site:\"\")+\"</h3>\"+cells+\"<button class='btn saveFxPar' data-room='\"+r.number+\"'>Save Room \"+r.number+\"</button></div>\";}).join(\"\");return \"<h1>Fixture expected by room number</h1>\"+(rows||\"<p>Add rooms first.</p>\")+\"<div class=card><h3>Add fixture</h3><input id=fxname placeholder='Name'><input id=fxpar type=number min=0 value=1><button class=btn id=addFx>Save fixture</button></div>\";};\n"+
+"viewBackup=function(){return \"<div class=card><h3>Backup hotel data</h3><p>Download after every staff or room change.</p><button class=btn id=dlBak>Download backup</button><p>Restore</p><input type=file id=upBak accept='application/json,.json'><button class='btn dark' id=rsBak>Restore backup</button></div>\";};\n"+
+"var _vs=viewStaff;viewStaff=function(){if(user&&user.role===\"superadmin\")return viewBackup()+viewFixtures()+staffEditor();return _vs();};\n"+
+"var _b=bind;bind=function(){_b();var dl=document.getElementById(\"dlBak\");if(dl)dl.onclick=function(){var blob=new Blob([JSON.stringify(db)],{type:\"application/json\"});var a=document.createElement(\"a\");a.href=URL.createObjectURL(blob);a.download=\"posh-backup-\"+today()+\".json\";a.click();};var rs=document.getElementById(\"rsBak\");if(rs)rs.onclick=function(){var inp=document.getElementById(\"upBak\");var f=inp&&inp.files&&inp.files[0];if(!f){alert(\"Choose a backup file\");return;}if(!confirm(\"Replace staff and rooms on this phone?\"))return;var rd=new FileReader();rd.onload=function(){try{var x=JSON.parse(rd.result);if(!x||!x.users)throw new Error(\"bad\");db=x;save();draw();}catch(err){alert(\"Not a valid backup\");}};rd.readAsText(f);};document.querySelectorAll(\".saveFxPar\").forEach(function(btn){btn.onclick=function(){if(!user||user.role!==\"superadmin\")return;var room=String(btn.getAttribute(\"data-room\"));if(!db.fxPar)db.fxPar={};if(!db.fxPar[room])db.fxPar[room]={};document.querySelectorAll(\".fxpt[data-room='\"+room+\"']\").forEach(function(inp){var n=parseInt(inp.value,10);db.fxPar[room][inp.getAttribute(\"data-item\")]=n>=0?n:0;});save();alert(\"Saved Room \"+room);draw();};});var addFx=document.getElementById(\"addFx\");if(addFx)addFx.onclick=function(){var name=(document.getElementById(\"fxname\").value||\"\").trim();if(!name)return;db.fixtures.push({id:\"fx\"+Date.now(),name:name,par:parseInt(document.getElementById(\"fxpar\").value,10)||1});save();draw();};};\n"+
+"try{draw();}catch(e){}\n"+
+"})();\n";
+}
 function boot(win){
-  try{win.eval(overlay());bar.textContent="Posh Manager 31Q — ready. Tap Staff for backup and room fixtures.";}
-  catch(e){bar.textContent="Phone blocked the update: "+e;}
+  try{
+    win.eval(overlay());
+    bar.textContent="Posh Manager 31R — ready. Staff → Backup + fixtures.";
+  }catch(e){
+    bar.textContent="Phone blocked the update: "+e;
+  }
 }
 var f=document.createElement("iframe");
-f.src="app.html?v=31Q"+Date.now();
+f.src="app.html?v=31R"+Date.now();
 f.onload=function(){boot(f.contentWindow);};
 document.body.appendChild(f);
 })();
