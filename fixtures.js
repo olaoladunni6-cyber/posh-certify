@@ -1,8 +1,11 @@
 (function(){
-if(typeof db==="undefined")return;
+function boot(){
+if(typeof db==="undefined"){setTimeout(boot,60);return;}
 if(!db.fxPar)db.fxPar={};
-if(!db.fixtures)db.fixtures=[];
-function fxList(){return db.fixtures||[];}
+if(!db.fixtures||!db.fixtures.length){
+  db.fixtures=[{id:"fx_kettle",name:"Kettle",par:1},{id:"fx_teaspoon",name:"Teaspoon",par:2},{id:"fx_teacup",name:"Tea cup",par:2},{id:"fx_glass",name:"Glass cup",par:2},{id:"fx_mug",name:"Coffee mug",par:2},{id:"fx_ice",name:"Ice bucket",par:1},{id:"fx_tray",name:"Tray",par:1},{id:"fx_remote",name:"TV remote",par:1},{id:"fx_dryer",name:"Hair dryer",par:1}];
+}
+function fxList(){return (typeof fixtureItems==="function"?fixtureItems():db.fixtures)||[];}
 function fxExpected(roomNo,id){
   var row=(db.fxPar||{})[String(roomNo)]||{};
   if(row[id]!=null&&String(row[id])!=="")return Number(row[id]||0);
@@ -103,4 +106,6 @@ bind=function(){
   };
 };
 try{draw();}catch(e){}
+}
+boot();
 })();
