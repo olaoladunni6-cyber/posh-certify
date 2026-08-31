@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Posh Manager 32R</title>
+<title>Posh Manager 32S</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui}
 #bar{padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512}
@@ -17,7 +17,7 @@ iframe.tall{top:168px;height:calc(100% - 168px)}
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 32R — loading…</span>
+  <span id=msg>POSH MANAGER 32S — loading…</span>
   <div id=acts>
     <button type=button id=barTok>Save token</button>
     <button type=button id=barPub>Publish</button>
@@ -25,7 +25,12 @@ iframe.tall{top:168px;height:calc(100% - 168px)}
     <button type=button id=barIn>Clock in</button>
     <button type=button id=barOpen>Submit opening</button>
     <button type=button id=barClose>Submit closing</button>
+    <button type=button id=barFolio>Save folio</button>
+    <button type=button id=barShift>Submit shift</button>
     <button type=button id=barAck>Acknowledge</button>
+    <button type=button id=barCert>Certify room</button>
+    <button type=button id=barSvc>Return to service</button>
+    <button type=button id=barOOO>Set OOO</button>
     <button type=button id=barSaveCnt>Save counts</button>
     <button type=button id=barLaundry>Send to laundry</button>
     <button type=button id=barSendRoom>Submit room</button>
@@ -33,93 +38,118 @@ iframe.tall{top:168px;height:calc(100% - 168px)}
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260831R"+Date.now(),frame;
+var V="20260831S"+Date.now(),frame;
+var ALL=["barTok","barPub","barPull","barIn","barOpen","barClose","barFolio","barShift","barAck","barCert","barSvc","barOOO","barSaveCnt","barLaundry","barSendRoom"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
 function loadInto(w,src){return fetch(src+"?v="+V,{cache:"reload"}).then(function(r){if(!r.ok)throw new Error(src);return r.text();}).then(function(code){var s=w.document.createElement("script");s.text=code;w.document.body.appendChild(s);});}
 function show(id,on){var el=document.getElementById(id);if(el)el.style.display=on?"inline-block":"none";}
+function val(w,id){var el=w.document.getElementById(id);return el?(el.value||"").trim():"";}
+function num(w,id){var n=parseFloat(val(w,id)||"0");return isNaN(n)?0:n;}
+function openRoom(w){
+  if(!w||!w.roomId||!w.db)return null;
+  return w.db.rooms.filter(function(x){return x.id===w.roomId;})[0]||null;
+}
 function hkRoom(w){
-  if(!w||!w.user||!w.db)return null;
-  if(w.roomId){var r=w.db.rooms.filter(function(x){return x.id===w.roomId;})[0];if(r)return r;}
-  return (w.db.rooms||[]).filter(function(x){return x.hk===w.user.id&&x.job&&x.status!=="certified"&&x.status!=="ooo";})[0]||null;
+  var r=openRoom(w);if(r)return r;
+  return (w&&w.db&&w.db.rooms||[]).filter(function(x){return w.user&&x.hk===w.user.id&&x.job&&x.status!=="certified"&&x.status!=="ooo";})[0]||null;
 }
 function hasVid(r){return !!(r&&(r.videoReady||r.video||(r.photos&&r.photos.Walkthrough)));}
 function hidePageBtns(w){
   try{
     var st=w.document.getElementById("hidePageBtns");
     if(!st){st=w.document.createElement("style");st.id="hidePageBtns";w.document.head.appendChild(st);}
-    st.textContent="#send,#sendL,#lrep,#cert,#saveCin,#submitShift,label.btn{display:none!important}";
+    st.textContent="#send,#sendL,#lrep,#cert,#rel,#ooo,#saveCin,#submitShift,label.btn{display:none!important}";
   }catch(e){}
 }
 function paintBar(){
   var w=win(),fr=frame;
-  ["barTok","barPub","barPull","barIn","barOpen","barClose","barAck","barSaveCnt","barLaundry","barSendRoom"].forEach(function(id){show(id,false);});
+  ALL.forEach(function(id){show(id,false);});
   document.getElementById("vidWrap").className="";
   if(!w||!w.user){if(fr)fr.className="";return;}
-  hidePageBtns(w);
-  if(fr)fr.className="tall";
-  var role=w.user.role,site=w.user.site||"";
+  hidePageBtns(w);if(fr)fr.className="tall";
+  var role=w.user.role,site=w.user.site||"",r=openRoom(w);
   if(role==="housekeeper"){
     show("barSaveCnt",true);show("barLaundry",true);show("barSendRoom",true);show("barPub",true);
     document.getElementById("vidWrap").className="on";
-    var r=hkRoom(w);
-    say(r?("Room "+r.number+(hasVid(r)?" · video on file":" · choose video below")):"Open your room, then choose video below");
-    return;
+    var h=hkRoom(w);
+    say(h?("Room "+h.number+(hasVid(h)?" · video on file":" · choose video")):"Open your room");return;
   }
-  if(role==="frontdesk"){show("barTok",true);show("barPub",true);show("barPull",true);show("barIn",true);show("barOpen",true);show("barClose",true);say("Front Desk · "+site);return;}
-  if(role==="manager"){show("barTok",true);show("barPub",true);show("barPull",true);show("barAck",true);say("Duty manager · "+site);return;}
+  if(role==="frontdesk"){
+    show("barTok",true);show("barPub",true);show("barPull",true);show("barIn",true);show("barOpen",true);show("barClose",true);show("barFolio",true);show("barShift",true);
+    say("Front Desk · fill guest form then Save folio");return;
+  }
+  if(role==="manager"){
+    show("barTok",true);show("barPub",true);show("barPull",true);show("barAck",true);show("barCert",true);show("barSvc",true);show("barOOO",true);
+    say(r?("Duty manager · Room "+r.number+" · "+r.status):"Duty manager · open a room to certify");return;
+  }
   show("barTok",true);show("barPub",true);show("barPull",true);say(w.user.name+" · "+site);
 }
 setInterval(paintBar,800);
 document.getElementById("barTok").onclick=function(){var v=prompt("Paste GitHub token");if(!v)return;localStorage.setItem("posh-gh-token",v.trim());var w=win();if(w)try{w.localStorage.setItem("posh-gh-token",v.trim());}catch(e){}alert("Token saved");};
 document.getElementById("barPub").onclick=function(){var w=win();if(w&&w.publishHotel)w.publishHotel(function(ok,err){alert(ok?"Published":String(err||"fail"));});};
 document.getElementById("barPull").onclick=function(){var w=win();if(w&&w.refreshHotel)w.refreshHotel(function(ok){alert(ok?"Refreshed":"Could not refresh");});};
-document.getElementById("barVid").onchange=function(){
-  var w=win(),f=this.files&&this.files[0],r=hkRoom(w);
-  if(!r){alert("Tap the allocated room first");return;}if(!f)return;
-  r.videoReady=true;r.videoName=f.name||"walkthrough";r.videoAt=new Date().toLocaleString();
-  w.roomId=r.id;
-  if(f.size>8000000){try{w.save();}catch(e){}alert("Video marked on Room "+r.number+" (clip kept on this phone only, file was large)");paintBar();return;}
-  var rd=new FileReader();
-  rd.onload=function(){r.video=rd.result;if(!r.photos)r.photos={};r.photos.Walkthrough=rd.result;try{w.save();}catch(e){}alert("Video attached to Room "+r.number);paintBar();};
-  rd.onerror=function(){try{w.save();}catch(e){}alert("Video marked on Room "+r.number);};
-  rd.readAsDataURL(f);
-};
-document.getElementById("barSaveCnt").onclick=function(){var w=win(),r=hkRoom(w);if(!r){alert("Open the room first");return;}r.laundryChecked=true;try{w.save();}catch(e){}alert("Counts saved for Room "+r.number);};
-document.getElementById("barLaundry").onclick=function(){
-  var w=win(),r=hkRoom(w);
-  if(!r){alert("Open the room first");return;}
-  if(!w.db.slips)w.db.slips=[];
-  var items={};
-  w.document.querySelectorAll(".sq").forEach(function(inp){var n=parseInt(inp.value,10);if(n>0)items[inp.getAttribute("data-item")]=n;});
-  if(!Object.keys(items).length){
-    var raw=prompt("How many dirty bags / towels are you sending to laundry?", "1");
-    var n=parseInt(raw,10);if(!(n>0)){alert("Enter a quantity");return;}
-    items.dirty_bag=n;
-  }
-  var summary=Object.keys(items).map(function(k){return items[k]+" x "+(typeof w.itemName==="function"?w.itemName(k):k);}).join(", ");
-  w.db.slips.push({id:"s"+Date.now(),room:r.number,site:r.site||w.user.site,by:w.user.name,at:new Date().toLocaleString(),items:items,status:"sent",summary:summary});
-  try{w.save();}catch(e){}
-  alert("Sent to laundry from Room "+r.number+"\n"+summary);
-};
-document.getElementById("barSendRoom").onclick=function(){
-  var w=win(),r=hkRoom(w);
-  if(!r){alert("Open the room first");return;}
-  if(!hasVid(r)){alert("Choose the video file first");return;}
-  r.videoReady=true;r.laundryChecked=true;r.status="submitted";
+document.getElementById("barFolio").onclick=function(){
+  var w=win();if(!w||w.user.role!=="frontdesk")return;
+  var name=val(w,"cinName"),room=val(w,"cinRoom"),amount=num(w,"cinAmt");
+  if(!name||!room){alert("On Desk, enter guest name and room first");return;}
+  var extras={early:num(w,"cinEarly"),earlyNote:val(w,"cinEarlyNote"),late:num(w,"cinLate"),lateNote:val(w,"cinLateNote"),laundry:num(w,"cinLau"),laundryNote:val(w,"cinLauNote"),minimart:num(w,"cinMart"),minimartNote:val(w,"cinMartNote"),other:num(w,"cinOth"),otherNote:val(w,"cinOthNote")};
+  var debt=num(w,"cinDebt"),billed=amount+extras.early+extras.late+extras.laundry+extras.minimart+extras.other;
+  if(!w.db.checkins)w.db.checkins=[];
+  w.db.checkins.push({id:"c"+Date.now(),guest:name,room:room,amount:amount,extras:extras,debt:debt,debtNote:val(w,"cinDebtNote"),collected:Math.max(0,billed-debt),site:w.user.site,by:w.user.name,byId:w.user.id,shift:w.user.shift||"A",day:w.today(),at:new Date().toLocaleString()});
+  if(debt>0){if(!w.db.debts)w.db.debts=[];w.db.debts.push({id:"db"+Date.now(),guest:name,room:room,site:w.user.site,amount:debt,remaining:debt,note:val(w,"cinDebtNote"),by:w.user.name,day:w.today(),at:new Date().toLocaleString(),payments:[]});}
   try{w.save();}catch(e){}
   if(w.publishHotel)w.publishHotel(function(){});
-  alert("Room "+r.number+" submitted with video on file");
+  alert("Folio saved for "+name+" · Rm "+room);
 };
-document.getElementById("barIn").onclick=function(){var w=win();if(!w||w.user.role!=="frontdesk")return;if(!w.db.clocks)w.db.clocks=[];w.db.clocks.push({id:"ck"+Date.now(),day:w.today(),site:w.user.site,by:w.user.name,byId:w.user.id,inAt:new Date().toLocaleTimeString(),outAt:""});try{w.save();}catch(e){}alert("Clocked in");};
-document.getElementById("barOpen").onclick=function(){var w=win();if(!w.db.fdChecks)w.db.fdChecks=[];w.db.fdChecks.push({id:"fc"+Date.now(),day:w.today(),site:w.user.site,kind:"open",by:w.user.name,byId:w.user.id,items:[],at:new Date().toLocaleString(),seen:false,seenBy:""});try{w.save();}catch(e){}alert("Opening sent");};
-document.getElementById("barClose").onclick=function(){var w=win();if(!w.db.fdChecks)w.db.fdChecks=[];w.db.fdChecks.push({id:"fc"+Date.now(),day:w.today(),site:w.user.site,kind:"close",by:w.user.name,byId:w.user.id,items:[],at:new Date().toLocaleString(),seen:false,seenBy:""});try{w.save();}catch(e){}alert("Closing sent");};
+document.getElementById("barShift").onclick=function(){
+  var w=win();if(!w||w.user.role!=="frontdesk")return;
+  if(!w.db.shiftReports)w.db.shiftReports=[];
+  w.db.shiftReports.push({id:"sh"+Date.now(),day:w.today(),site:w.user.site,by:w.user.name,byId:w.user.id,shift:w.user.shift||"A",sales:0,arrivals:(w.db.checkins||[]).filter(function(c){return c.day===w.today()&&c.byId===w.user.id;}).length,inhouse:parseInt(val(w,"cinHouse")||"0",10)||0,expected:parseInt(val(w,"cinExp")||"0",10)||0,incident:val(w,"cinInc"),at:new Date().toLocaleString()});
+  try{w.save();}catch(e){}alert("Shift report submitted");
+};
+document.getElementById("barCert").onclick=function(){
+  var w=win(),r=openRoom(w);
+  if(!w||w.user.role!=="manager"){alert("Duty manager only");return;}
+  if(!r){alert("Open the room first");return;}
+  if(r.status==="ooo"){alert("Room is OOO. Return to service first");return;}
+  r.status="certified";try{w.save();}catch(e){}
+  if(w.publishHotel)w.publishHotel(function(){});
+  alert("Room "+r.number+" certified. Ready to sell.");
+};
+document.getElementById("barSvc").onclick=function(){
+  var w=win(),r=openRoom(w);
+  if(!r){alert("Open the room first");return;}
+  r.status="pending";try{w.save();}catch(e){}alert("Room "+r.number+" returned to service");
+};
+document.getElementById("barOOO").onclick=function(){
+  var w=win(),r=openRoom(w);
+  if(!r){alert("Open the room first");return;}
+  r.status="ooo";try{w.save();}catch(e){}alert("Room "+r.number+" set OUT OF ORDER");
+};
+document.getElementById("barVid").onchange=function(){
+  var w=win(),f=this.files&&this.files[0],r=hkRoom(w);
+  if(!r||!f){alert("Open the room first");return;}
+  r.videoReady=true;w.roomId=r.id;
+  var rd=new FileReader();rd.onload=function(){r.video=rd.result;if(!r.photos)r.photos={};r.photos.Walkthrough=rd.result;try{w.save();}catch(e){}alert("Video attached to Room "+r.number);};rd.readAsDataURL(f);
+};
+document.getElementById("barSaveCnt").onclick=function(){var w=win(),r=hkRoom(w);if(!r)return;r.laundryChecked=true;try{w.save();}catch(e){}alert("Counts saved");};
+document.getElementById("barLaundry").onclick=function(){
+  var w=win(),r=hkRoom(w);if(!r)return;if(!w.db.slips)w.db.slips=[];
+  var raw=prompt("Dirty bags / towels to laundry?","1");var n=parseInt(raw,10);if(!(n>0))return;
+  w.db.slips.push({id:"s"+Date.now(),room:r.number,site:r.site||w.user.site,by:w.user.name,at:new Date().toLocaleString(),items:{dirty_bag:n},status:"sent",summary:n+" x dirty bag"});
+  try{w.save();}catch(e){}alert("Sent to laundry");
+};
+document.getElementById("barSendRoom").onclick=function(){var w=win(),r=hkRoom(w);if(!r)return;if(!hasVid(r)){alert("Choose video first");return;}r.videoReady=true;r.laundryChecked=true;r.status="submitted";try{w.save();}catch(e){}alert("Room submitted");};
+document.getElementById("barIn").onclick=function(){var w=win();if(!w.db.clocks)w.db.clocks=[];w.db.clocks.push({id:"ck"+Date.now(),day:w.today(),site:w.user.site,by:w.user.name,byId:w.user.id,inAt:new Date().toLocaleTimeString(),outAt:""});try{w.save();}catch(e){}alert("Clocked in");};
+document.getElementById("barOpen").onclick=function(){if(!win().db.fdChecks)win().db.fdChecks=[];win().db.fdChecks.push({id:"fc"+Date.now(),day:win().today(),site:win().user.site,kind:"open",by:win().user.name,byId:win().user.id,items:[],at:new Date().toLocaleString(),seen:false,seenBy:""});try{win().save();}catch(e){}alert("Opening sent");};
+document.getElementById("barClose").onclick=function(){if(!win().db.fdChecks)win().db.fdChecks=[];win().db.fdChecks.push({id:"fc"+Date.now(),day:win().today(),site:win().user.site,kind:"close",by:win().user.name,byId:win().user.id,items:[],at:new Date().toLocaleString(),seen:false,seenBy:""});try{win().save();}catch(e){}alert("Closing sent");};
 document.getElementById("barAck").onclick=function(){var w=win();(w.db.fdChecks||[]).forEach(function(c){if(c.site===w.user.site){c.seen=true;c.seenBy=w.user.name;}});try{w.save();}catch(e){}alert("Acknowledged");};
 function start(){
-  frame=document.createElement("iframe");frame.setAttribute("allow","camera; microphone");frame.src="app.html?v="+V;
+  frame=document.createElement("iframe");frame.src="app.html?v="+V;
   frame.onload=function(){
     var w=win();
-    loadInto(w,"desk.js").then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("32R READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("32R failed: "+err);});
+    loadInto(w,"desk.js").then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("32S READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("32S failed: "+err);});
   };
   document.body.appendChild(frame);
 }
