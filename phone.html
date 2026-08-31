@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
-<title>Posh Manager 32E</title>
+<title>Posh Manager 32F</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;color:#f4efe6;font-family:system-ui}
 #bar{padding:8px 12px;font-size:13px;font-weight:700;background:#c4a574;color:#101512;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -13,9 +13,9 @@ iframe{position:fixed;top:48px;left:0;right:0;bottom:0;width:100%;height:calc(10
 </style>
 </head>
 <body>
-<div id=bar>POSH MANAGER 32E — one walkthrough video… <button id=askNote type=button>Allow phone alerts</button></div>
+<div id=bar>POSH MANAGER 32F — desk clock fix… <button id=askNote type=button>Allow phone alerts</button></div>
 <script>
-var V="20260831E"+Date.now();
+var V="20260831F"+Date.now();
 function loadInto(win, src){
   return fetch(src+"?v="+V,{cache:"reload"}).then(function(r){
     if(!r.ok)throw new Error(src+" "+r.status);
@@ -26,53 +26,38 @@ function loadInto(win, src){
     win.document.body.appendChild(s);
   });
 }
-function askAlerts(){
-  if(!("Notification" in window)){alert("This Safari cannot show banners. Add Posh Manager to the Home Screen first.");return;}
-  Notification.requestPermission().then(function(p){
-    if(p==="granted"){
-      try{new Notification("Posh Manager",{body:"Alerts are on for this phone"});}catch(e){}
-      alert("Phone alerts are on.");
-    }else{
-      alert("Safari blocked alerts. Settings → Safari → Notifications, then Add to Home Screen.");
-    }
-  });
-}
-document.getElementById("askNote").onclick=askAlerts;
+document.getElementById("askNote").onclick=function(){
+  if(!("Notification" in window)){alert("Add to Home Screen first.");return;}
+  Notification.requestPermission();
+};
 function start(){
   var f=document.createElement("iframe");
   f.setAttribute("allow","notifications; camera; microphone");
   f.src="app.html?v="+V;
   f.onload=function(){
     var win=f.contentWindow;
-    if(!win||!win.document){document.getElementById("bar").firstChild.textContent="32E failed to open app.html ";return;}
-    try{win.document.title="Posh Manager 32E";}catch(e){}
+    if(!win)return;
     loadInto(win,"desk.js")
+      .then(function(){return loadInto(win,"fdclock.js");})
       .then(function(){return loadInto(win,"clock.js");})
       .then(function(){return loadInto(win,"loss.js");})
       .then(function(){return loadInto(win,"fixtures.js");})
       .then(function(){return loadInto(win,"evidence.js");})
       .then(function(){return loadInto(win,"sync.js");})
       .then(function(){
-        document.getElementById("bar").firstChild.textContent="POSH MANAGER 32E READY — 1 video only ";
+        document.getElementById("bar").firstChild.textContent="POSH MANAGER 32F READY — tap Desk then Clock in ";
         try{if(win.draw)win.draw();}catch(e){}
       }).catch(function(err){
-        document.getElementById("bar").firstChild.textContent="32E module failed: "+err+" ";
+        document.getElementById("bar").firstChild.textContent="32F failed: "+err+" ";
       });
   };
   document.body.appendChild(f);
 }
-function wipeThenStart(){
-  var p=Promise.resolve();
-  if(navigator.serviceWorker){
-    p=navigator.serviceWorker.getRegistrations().then(function(list){
-      return Promise.all(list.map(function(r){return r.unregister();}));
-    });
-  }
-  p.then(function(){
-    if(window.caches)return caches.keys().then(function(keys){return Promise.all(keys.map(function(k){return caches.delete(k);}));});
+if(navigator.serviceWorker){
+  navigator.serviceWorker.getRegistrations().then(function(list){
+    return Promise.all(list.map(function(r){return r.unregister();}));
   }).then(start).catch(start);
-}
-wipeThenStart();
+}else start();
 </script>
 </body>
 </html>
