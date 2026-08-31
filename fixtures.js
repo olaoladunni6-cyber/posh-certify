@@ -19,6 +19,38 @@ function fxActual(r,id){
 }
 function fxShort(r,id){return Math.max(0,fxExpected(r.number,id)-fxActual(r,id));}
 fixtureMiss=function(r){return fxList().reduce(function(n,it){return n+fxShort(r,it.id);},0);};
+function keepDraft(){
+  window.__poshTyping=Date.now();
+  if(!db.fxPar)db.fxPar={};
+  document.querySelectorAll(".fxpt").forEach(function(inp){
+    var room=String(inp.getAttribute("data-room"));
+    var id=inp.getAttribute("data-item");
+    if(!db.fxPar[room])db.fxPar[room]={};
+    var n=parseInt(inp.value,10);
+    db.fxPar[room][id]=isNaN(n)?0:n;
+  });
+  if(typeof roomId!=="undefined"&&roomId){
+    var r=db.rooms.filter(function(x){return x.id===roomId;})[0];
+    if(r){
+      if(!r.fixtureActual)r.fixtureActual={};
+      if(!r.fixtureMiss)r.fixtureMiss={};
+      document.querySelectorAll(".fa").forEach(function(inp){
+        var id=inp.getAttribute("data-item");
+        var n=parseInt(inp.value,10);
+        if(inp.value===""||isNaN(n))return;
+        r.fixtureActual[id]=n;
+        r.fixtureMiss[id]=Math.max(0,fxExpected(r.number,id)-n);
+      });
+      document.querySelectorAll(".q").forEach(function(inp){
+        if(!r.missing)r.missing={};
+        var n=parseInt(inp.value,10);
+        if(inp.value===""||isNaN(n))return;
+        r.missing[inp.getAttribute("data-item")]=n;
+      });
+    }
+  }
+  try{localStorage.setItem(typeof KEY==="string"?KEY:"posh-full-v13",JSON.stringify(db));}catch(e){}
+}
 viewBackup=function(){
   return "<div class=card><h3>Backup hotel data</h3><p>Download after every staff or room change. This phone keeps its own copy until you restore a file.</p><button class=btn id=dlBak>Download backup</button><p>Restore</p><input id=upBak type=file accept='application/json,.json'><button class='btn dark' id=doBak>Restore backup</button></div>";
 };
@@ -49,15 +81,20 @@ laundryBox=function(r){
   var fx=fxList().map(function(it){
     var exp=fxExpected(r.number,it.id),short=fxShort(r,it.id);
     var shown=r.fixtureActual&&r.fixtureActual[it.id]!=null?r.fixtureActual[it.id]:"";
-    var inp=can?"<input class=fa type=number min=0 data-item='"+it.id+"' value='"+shown+"' placeholder='Actual in this room'>":"<span class=qty>"+(shown===""?"not counted":("actual "+shown))+"</span>";
-    return "<p><b>"+it.name+"</b><br>Room "+r.number+" expected <b>"+exp+"</b>"+(short?(" · <b>"+short+" missing</b>"):" · complete")+"<br>"+inp+"</p>";
+    var inp=can?"<input class=fa type=number min=0 inputmode=numeric data-item='"+it.id+"' value='"+shown+"' placeholder='Actual in this room'>":"<span class=qty>"+(shown===""?"not counted":("actual "+shown))+"</span>";
+    return "<p><b>"+it.name+"</b><br>Room "+r.number+" expected <b>"+exp+"</b>"+(short&&shown!==""?(" · <b>"+short+" missing</b>"):"")+"<br>"+inp+"</p>";
   }).join("");
-  var daily=dailyItems.map(function(it){var n=Number((r.missing||{})[it.id]||0);return "<div class=row><span>"+it.name+" · "+it.cat+"</span>"+(can?"<input class=q type=number min=0 data-item='"+it.id+"' value='"+(n||"")+"'>":"<span class=qty>"+n+"</span>")+"</div>";}).join("");
+  var daily=dailyItems.map(function(it){var n=Number((r.missing||{})[it.id]||0);return "<div class=row><span>"+it.name+" · "+it.cat+"</span>"+(can?"<input class=q type=number min=0 inputmode=numeric data-item='"+it.id+"' value='"+(n||"")+"'>":"<span class=qty>"+n+"</span>")+"</div>";}).join("");
   return "<div class=card><h3>Fixtures · Room "+r.number+"</h3>"+fx+"</div><div class=card><h3>Toiletries, towels and linen</h3>"+daily+(can?"<button class=btn id=lrep>Save counts</button>":"")+"</div>";
 };
 var _b2=bind;
 bind=function(){
   _b2();
+  document.querySelectorAll(".fxpt,.fa,.q").forEach(function(inp){
+    inp.addEventListener("focus",function(){window.__poshTyping=Date.now();});
+    inp.addEventListener("input",keepDraft);
+    inp.addEventListener("blur",function(){keepDraft();window.__poshTyping=Date.now();});
+  });
   var dlBak=document.getElementById("dlBak");
   if(dlBak)dlBak.onclick=function(){
     var blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
@@ -85,14 +122,9 @@ bind=function(){
   document.querySelectorAll(".saveFxPar").forEach(function(b){
     b.onclick=function(){
       if(!user||user.role!=="superadmin")return;
-      var room=String(b.getAttribute("data-room"));
-      if(!db.fxPar)db.fxPar={};
-      if(!db.fxPar[room])db.fxPar[room]={};
-      document.querySelectorAll(".fxpt[data-room='"+room+"']").forEach(function(inp){
-        var n=parseInt(inp.value,10);
-        db.fxPar[room][inp.getAttribute("data-item")]=n>=0?n:0;
-      });
-      save();alert("Saved Room "+room);draw();
+      keepDraft();
+      save();
+      alert("Saved Room "+b.getAttribute("data-room"));
     };
   });
   var addFx=document.getElementById("addFx");
@@ -104,6 +136,17 @@ bind=function(){
     db.fixtures.push({id:"fx"+Date.now(),name:name,par:par});
     save();draw();
   };
+  var lrep=document.getElementById("lrep");
+  if(lrep){
+    var prev=lrep.onclick;
+    lrep.onclick=function(){
+      keepDraft();
+      var r=db.rooms.filter(function(x){return x.id===roomId;})[0];
+      if(r)r.laundryChecked=true;
+      if(prev)prev();
+      else{save();draw();}
+    };
+  }
 };
 try{draw();}catch(e){}
 }
