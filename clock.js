@@ -1,6 +1,6 @@
 (function(){
 function boot(){
-if(typeof db==="undefined"||typeof bind!=="function"){setTimeout(boot,60);return;}
+if(typeof db==="undefined"||typeof bind!=="function"){setTimeout(boot,80);return;}
 if(window.__poshClock)return;
 window.__poshClock=true;
 if(!db.clocks)db.clocks=[];
@@ -25,6 +25,8 @@ function canSeeClock(){
 }
 function clockBox(){
   if(!canSeeClock())return "";
+  if(window.__clockHtml)return window.__clockHtml;
+  var html;
   if(!isFD()){
     var list=todayClocks().slice().reverse().map(function(c){
       return "<p><b>"+c.by+"</b> · "+c.site+" · in "+c.inAt+(c.outAt?(" · out "+c.outAt):" · ON DUTY")+"</p>";
@@ -34,52 +36,42 @@ function clockBox(){
       var ack=mgr()&&!c.seen?"<button class='btn ackFD' data-id='"+c.id+"'>Acknowledge</button>":(c.seen?"<p>Seen by "+c.seenBy+"</p>":"");
       return "<div class=card><b>"+c.by+" · "+(c.kind==="close"?"Closing":"Opening")+" checklist</b><br>"+c.at+items+(c.note?("<p>"+c.note+"</p>"):"")+ack+"</div>";
     }).join("");
-    return "<div class=card><h3>Front desk clock today</h3>"+(list||"<p>No one clocked in yet.</p>")+"</div>"+(checks||"")+editLists();
+    html="<div id=shiftClock class=card><h3>Front desk clock today</h3>"+(list||"<p>No one clocked in yet.</p>")+"</div>"+(checks||"")+editLists();
+  }else{
+    var open=myOpenClock();
+    var opened=todayCheck(user.id,"open");
+    var closed=todayCheck(user.id,"close");
+    var clock;
+    if(!open&&closed)clock="<div class=ok>Shift closed at "+closed.at+"</div>";
+    else if(open)clock="<div class=ok>Clocked in at "+open.inAt+" · "+user.site+" · shift "+(user.shift||"")+"</div>";
+    else clock="<div class=warn>Clock in before you take guests.</div><button class=btn id=clockIn>Clock in — I am on duty</button>";
+    var form="";
+    if(open&&!opened)form="<div class=card><h3>Opening checklist — send to duty manager</h3>"+ticks(openList(),"fdck")+"<textarea id=fdNote placeholder='Notes for duty manager (optional)'></textarea><button class=btn id=sendFDCheck>Submit opening checklist</button></div>";
+    if(opened&&!closed)form+="<div class=ok>Opening checklist submitted at "+opened.at+(opened.seen?(" · seen by "+opened.seenBy):" · waiting for duty manager")+".</div>";
+    if(open&&opened&&!closed)form+="<div class=card><h3>Closing checklist — clock out</h3>"+ticks(closeList(),"fdclose")+"<textarea id=fdCloseNote placeholder='Handover notes for next shift'></textarea><button class='btn dark' id=sendFDClose>Submit closing checklist and clock out</button></div>";
+    if(closed)form+="<div class=ok>Closing checklist submitted at "+closed.at+(closed.seen?(" · seen by "+closed.seenBy):" · waiting for duty manager")+".</div>";
+    html="<div id=shiftClock class=card><h3>Shift clock</h3>"+clock+"</div>"+form;
   }
-  var open=myOpenClock();
-  var opened=todayCheck(user.id,"open");
-  var closed=todayCheck(user.id,"close");
-  var clock;
-  if(!open&&closed)clock="<div class=ok>Shift closed at "+closed.at+"</div>";
-  else if(open)clock="<div class=ok>Clocked in at "+open.inAt+" · "+user.site+" · shift "+(user.shift||"")+"</div>";
-  else clock="<div class=warn>Clock in before you take guests.</div><button class=btn id=clockIn>Clock in — I am on duty</button>";
-  var form="";
-  if(open&&!opened)form="<div class=card><h3>Opening checklist — send to duty manager</h3>"+ticks(openList(),"fdck")+"<textarea id=fdNote placeholder='Notes for duty manager (optional)'></textarea><button class=btn id=sendFDCheck>Submit opening checklist</button></div>";
-  if(opened&&!closed)form+="<div class=ok>Opening checklist submitted at "+opened.at+(opened.seen?(" · seen by "+opened.seenBy):" · waiting for duty manager")+".</div>";
-  if(open&&opened&&!closed)form+="<div class=card><h3>Closing checklist — clock out</h3>"+ticks(closeList(),"fdclose")+"<textarea id=fdCloseNote placeholder='Handover notes for next shift'></textarea><button class='btn dark' id=sendFDClose>Submit closing checklist and clock out</button></div>";
-  if(closed)form+="<div class=ok>Closing checklist submitted at "+closed.at+(closed.seen?(" · seen by "+closed.seenBy):" · waiting for duty manager")+".</div>";
-  return "<div class=card><h3>Shift clock</h3>"+clock+"</div>"+form;
+  window.__clockHtml=html;
+  return html;
 }
 window.clockBox=clockBox;
-function wrap(name){
-  var prev=typeof window[name]==="function"?window[name]:(typeof this[name]==="function"?this[name]:null);
-  if(typeof eval(name)!=="function"&&!prev)return;
-}
 function attach(fnName){
   var prev;
   try{prev=eval(fnName);}catch(e){return;}
-  if(typeof prev!=="function")return;
-  if(prev.__withClock)return;
-  var wrapped=function(){return clockBox()+prev.apply(this,arguments);};
+  if(typeof prev!=="function"||prev.__withClock)return;
+  var wrapped=function(){
+    window.__clockHtml="";
+    return clockBox()+prev.apply(this,arguments);
+  };
   wrapped.__withClock=true;
   try{eval(fnName+"=wrapped");}catch(e){}
 }
 attach("viewDesk");
 attach("viewBoard");
-attach("viewStaff");
-attach("viewMe");
-setTimeout(function(){attach("viewDesk");attach("viewBoard");attach("viewStaff");attach("viewMe");try{draw();}catch(e){};},400);
-function collect(sel,list){
-  var items=[];
-  document.querySelectorAll(sel).forEach(function(box){
-    if(!box.checked)return;
-    var i=parseInt(box.getAttribute("data-i"),10);
-    if(list[i])items.push(list[i]);
-  });
-  return items;
-}
 var _bClock=bind;
 bind=function(){
+  window.__clockHtml="";
   _bClock();
   var cin=document.getElementById("clockIn");
   if(cin)cin.onclick=function(){
@@ -94,7 +86,12 @@ bind=function(){
     if(!isFD()||!myOpenClock()){alert("Clock in first");return;}
     if(todayCheck(user.id,"open"))return;
     var list=openList();
-    var items=collect(".fdck",list);
+    var items=[];
+    document.querySelectorAll(".fdck").forEach(function(box){
+      if(!box.checked)return;
+      var i=parseInt(box.getAttribute("data-i"),10);
+      if(list[i])items.push(list[i]);
+    });
     if(items.length<list.length){alert("Tick every opening item");return;}
     var note=(document.getElementById("fdNote")&&document.getElementById("fdNote").value||"").trim();
     db.fdChecks.push({id:"fc"+Date.now(),day:today(),site:workSite(),kind:"open",by:user.name,byId:user.id,items:items,note:note,at:new Date().toLocaleString(),seen:false,seenBy:""});
@@ -109,7 +106,12 @@ bind=function(){
     if(!ck){alert("You are not clocked in");return;}
     if(!todayCheck(user.id,"open")){alert("Submit the opening checklist first");return;}
     var list=closeList();
-    var items=collect(".fdclose",list);
+    var items=[];
+    document.querySelectorAll(".fdclose").forEach(function(box){
+      if(!box.checked)return;
+      var i=parseInt(box.getAttribute("data-i"),10);
+      if(list[i])items.push(list[i]);
+    });
     if(items.length<list.length){alert("Tick every closing item");return;}
     var note=(document.getElementById("fdCloseNote")&&document.getElementById("fdCloseNote").value||"").trim();
     ck.outAt=new Date().toLocaleTimeString();
