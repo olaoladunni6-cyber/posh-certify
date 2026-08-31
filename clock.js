@@ -25,8 +25,8 @@ function canSeeClock(){
 }
 function clockBox(){
   if(!canSeeClock())return "";
-  if(window.__clockHtml)return window.__clockHtml;
-  var html;
+  if(window.__clockUsed)return "";
+  window.__clockUsed=true;
   if(!isFD()){
     var list=todayClocks().slice().reverse().map(function(c){
       return "<p><b>"+c.by+"</b> · "+c.site+" · in "+c.inAt+(c.outAt?(" · out "+c.outAt):" · ON DUTY")+"</p>";
@@ -36,24 +36,21 @@ function clockBox(){
       var ack=mgr()&&!c.seen?"<button class='btn ackFD' data-id='"+c.id+"'>Acknowledge</button>":(c.seen?"<p>Seen by "+c.seenBy+"</p>":"");
       return "<div class=card><b>"+c.by+" · "+(c.kind==="close"?"Closing":"Opening")+" checklist</b><br>"+c.at+items+(c.note?("<p>"+c.note+"</p>"):"")+ack+"</div>";
     }).join("");
-    html="<div id=shiftClock class=card><h3>Front desk clock today</h3>"+(list||"<p>No one clocked in yet.</p>")+"</div>"+(checks||"")+editLists();
-  }else{
-    var open=myOpenClock();
-    var opened=todayCheck(user.id,"open");
-    var closed=todayCheck(user.id,"close");
-    var clock;
-    if(!open&&closed)clock="<div class=ok>Shift closed at "+closed.at+"</div>";
-    else if(open)clock="<div class=ok>Clocked in at "+open.inAt+" · "+user.site+" · shift "+(user.shift||"")+"</div>";
-    else clock="<div class=warn>Clock in before you take guests.</div><button class=btn id=clockIn>Clock in — I am on duty</button>";
-    var form="";
-    if(open&&!opened)form="<div class=card><h3>Opening checklist — send to duty manager</h3>"+ticks(openList(),"fdck")+"<textarea id=fdNote placeholder='Notes for duty manager (optional)'></textarea><button class=btn id=sendFDCheck>Submit opening checklist</button></div>";
-    if(opened&&!closed)form+="<div class=ok>Opening checklist submitted at "+opened.at+(opened.seen?(" · seen by "+opened.seenBy):" · waiting for duty manager")+".</div>";
-    if(open&&opened&&!closed)form+="<div class=card><h3>Closing checklist — clock out</h3>"+ticks(closeList(),"fdclose")+"<textarea id=fdCloseNote placeholder='Handover notes for next shift'></textarea><button class='btn dark' id=sendFDClose>Submit closing checklist and clock out</button></div>";
-    if(closed)form+="<div class=ok>Closing checklist submitted at "+closed.at+(closed.seen?(" · seen by "+closed.seenBy):" · waiting for duty manager")+".</div>";
-    html="<div id=shiftClock class=card><h3>Shift clock</h3>"+clock+"</div>"+form;
+    return "<div id=shiftClock class=card><h3>Front desk clock today</h3>"+(list||"<p>No one clocked in yet.</p>")+"</div>"+(checks||"")+editLists();
   }
-  window.__clockHtml=html;
-  return html;
+  var open=myOpenClock();
+  var opened=todayCheck(user.id,"open");
+  var closed=todayCheck(user.id,"close");
+  var clock;
+  if(!open&&closed)clock="<div class=ok>Shift closed at "+closed.at+"</div>";
+  else if(open)clock="<div class=ok>Clocked in at "+open.inAt+" · "+user.site+" · shift "+(user.shift||"")+"</div>";
+  else clock="<div class=warn>Clock in before you take guests.</div><button class=btn id=clockIn>Clock in — I am on duty</button>";
+  var form="";
+  if(open&&!opened)form="<div class=card><h3>Opening checklist — send to duty manager</h3>"+ticks(openList(),"fdck")+"<textarea id=fdNote placeholder='Notes for duty manager (optional)'></textarea><button class=btn id=sendFDCheck>Submit opening checklist</button></div>";
+  if(opened&&!closed)form+="<div class=ok>Opening checklist submitted at "+opened.at+(opened.seen?(" · seen by "+opened.seenBy):" · waiting for duty manager")+".</div>";
+  if(open&&opened&&!closed)form+="<div class=card><h3>Closing checklist — clock out</h3>"+ticks(closeList(),"fdclose")+"<textarea id=fdCloseNote placeholder='Handover notes for next shift'></textarea><button class='btn dark' id=sendFDClose>Submit closing checklist and clock out</button></div>";
+  if(closed)form+="<div class=ok>Closing checklist submitted at "+closed.at+(closed.seen?(" · seen by "+closed.seenBy):" · waiting for duty manager")+".</div>";
+  return "<div id=shiftClock class=card><h3>Shift clock</h3>"+clock+"</div>"+form;
 }
 window.clockBox=clockBox;
 function attach(fnName){
@@ -61,7 +58,7 @@ function attach(fnName){
   try{prev=eval(fnName);}catch(e){return;}
   if(typeof prev!=="function"||prev.__withClock)return;
   var wrapped=function(){
-    window.__clockHtml="";
+    window.__clockUsed=false;
     return clockBox()+prev.apply(this,arguments);
   };
   wrapped.__withClock=true;
@@ -71,7 +68,6 @@ attach("viewDesk");
 attach("viewBoard");
 var _bClock=bind;
 bind=function(){
-  window.__clockHtml="";
   _bClock();
   var cin=document.getElementById("clockIn");
   if(cin)cin.onclick=function(){
@@ -126,7 +122,7 @@ bind=function(){
     db.fdOpenList=(document.getElementById("editOpen").value||"").split("\n").map(function(s){return s.trim();}).filter(Boolean);
     db.fdCloseList=(document.getElementById("editClose").value||"").split("\n").map(function(s){return s.trim();}).filter(Boolean);
     if(!db.fdOpenList.length||!db.fdCloseList.length){alert("Keep at least one item on each list");return;}
-    save();alert("Checklists saved. Publish if this laptop should update the phones.");draw();
+    save();alert("Checklists saved.");draw();
   };
   document.querySelectorAll(".ackFD").forEach(function(b){
     b.onclick=function(){
