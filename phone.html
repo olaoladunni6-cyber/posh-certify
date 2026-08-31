@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 32V</title>
+<title>Posh Manager 32W</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui}
 #bar{padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512}
@@ -16,7 +16,7 @@ iframe.tall{top:168px;height:calc(100% - 168px)}
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 32V — loading…</span>
+  <span id=msg>POSH MANAGER 32W — loading…</span>
   <div id=acts>
     <button type=button id=barTok>Save token</button>
     <button type=button id=barPub>Publish</button>
@@ -30,6 +30,7 @@ iframe.tall{top:168px;height:calc(100% - 168px)}
     <button type=button id=barCert>Certify room</button>
     <button type=button id=barSvc>Return to service</button>
     <button type=button id=barOOO>Set OOO</button>
+    <button type=button id=barMaint>Send to maintenance</button>
     <button type=button id=barSaveCnt>Save counts</button>
     <button type=button id=barLaundry>Send to laundry</button>
     <button type=button id=barSendRoom>Submit room</button>
@@ -37,8 +38,8 @@ iframe.tall{top:168px;height:calc(100% - 168px)}
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260831V"+Date.now(),frame;
-var ALL=["barTok","barPub","barPull","barIn","barOpen","barClose","barFolio","barShift","barAck","barCert","barSvc","barOOO","barSaveCnt","barLaundry","barSendRoom"];
+var V="20260831W"+Date.now(),frame;
+var ALL=["barTok","barPub","barPull","barIn","barOpen","barClose","barFolio","barShift","barAck","barCert","barSvc","barOOO","barMaint","barSaveCnt","barLaundry","barSendRoom"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
 function loadInto(w,src){return fetch(src+"?v="+V,{cache:"reload"}).then(function(r){if(!r.ok)throw new Error(src);return r.text();}).then(function(code){var s=w.document.createElement("script");s.text=code;w.document.body.appendChild(s);});}
@@ -47,19 +48,35 @@ function val(w,id){var el=w.document.getElementById(id);return el?(el.value||"")
 function num(w,id){var n=parseFloat(val(w,id)||"0");return isNaN(n)?0:n;}
 function openRoom(w){if(!w||!w.roomId||!w.db)return null;return w.db.rooms.filter(function(x){return x.id===w.roomId;})[0]||null;}
 function hkRoom(w){return openRoom(w)||((w&&w.db&&w.db.rooms||[]).filter(function(x){return w.user&&x.hk===w.user.id&&x.job&&x.status!=="certified";})[0]||null);}
-function hasVid(r){return !!(r&&(r.videoReady||r.video||(r.photos&&r.photos.Walkthrough)));}
 function pingDesk(w,room,kind){if(!w.db.deskNotes)w.db.deskNotes=[];w.db.deskNotes.push({id:"n"+Date.now(),room:room,kind:kind,site:w.user.site,at:new Date().toLocaleString()});}
 function hidePageBtns(w){try{var st=w.document.getElementById("hidePageBtns");if(!st){st=w.document.createElement("style");st.id="hidePageBtns";w.document.head.appendChild(st);}st.textContent="#send,#sendL,#lrep,#cert,#rel,#ooo,#saveCin,#submitShift,label.btn{display:none!important}";}catch(e){}}
 function paintBar(){
   var w=win(),fr=frame;ALL.forEach(function(id){show(id,false);});document.getElementById("vidWrap").className="";
   if(!w||!w.user){if(fr)fr.className="";return;}hidePageBtns(w);if(fr)fr.className="tall";
   var role=w.user.role,r=openRoom(w);
-  if(role==="housekeeper"){show("barSaveCnt",true);show("barLaundry",true);show("barSendRoom",true);show("barPub",true);document.getElementById("vidWrap").className="on";say("Housekeeper");return;}
-  if(role==="frontdesk"){show("barTok",true);show("barPub",true);show("barPull",true);show("barIn",true);show("barOpen",true);show("barClose",true);show("barFolio",true);show("barShift",true);say("Front Desk");return;}
-  if(role==="manager"){show("barTok",true);show("barPub",true);show("barPull",true);show("barAck",true);show("barCert",true);show("barSvc",true);show("barOOO",true);say(r?("Room "+r.number):"Open a room");return;}
+  if(role==="housekeeper"){show("barSaveCnt",true);show("barLaundry",true);show("barSendRoom",true);show("barMaint",true);show("barPub",true);document.getElementById("vidWrap").className="on";say("Housekeeper");return;}
+  if(role==="frontdesk"){show("barTok",true);show("barPub",true);show("barPull",true);show("barIn",true);show("barOpen",true);show("barClose",true);show("barFolio",true);show("barShift",true);show("barMaint",true);say("Front Desk");return;}
+  if(role==="manager"){show("barTok",true);show("barPub",true);show("barPull",true);show("barAck",true);show("barCert",true);show("barSvc",true);show("barOOO",true);show("barMaint",true);say(r?("Room "+r.number):"Open a room");return;}
+  if(role==="ceo"){show("barTok",true);show("barPub",true);show("barPull",true);show("barMaint",true);say(w.user.name);return;}
   show("barTok",true);show("barPub",true);show("barPull",true);say(w.user.name);
 }
 setInterval(paintBar,800);
+function sendMaint(){
+  var w=win();if(!w||!w.user)return;
+  var r=openRoom(w);
+  var room=r?r.number:prompt("Room number for maintenance?");
+  if(!room)return;
+  var detail=prompt("What should maintenance do on Room "+room+"?");
+  if(detail===null||!String(detail).trim())return;
+  if(!w.db.issues)w.db.issues=[];
+  var due=new Date();due.setHours(due.getHours()+6);
+  w.db.issues.push({id:"is"+Date.now(),room:String(room),site:w.user.site,by:w.user.name,byId:w.user.id,detail:String(detail).trim(),status:"received",stage:"received",deadline:due.toLocaleString(),day:w.today(),at:new Date().toLocaleString()});
+  pingDesk(w,room,"MAINTENANCE: "+detail);
+  try{w.save();}catch(e){}
+  if(w.publishHotel)w.publishHotel(function(){});
+  alert("Sent to maintenance\nRoom "+room+"\n"+detail);
+}
+document.getElementById("barMaint").onclick=sendMaint;
 document.getElementById("barTok").onclick=function(){var v=prompt("Paste GitHub token");if(!v)return;localStorage.setItem("posh-gh-token",v.trim());var w=win();if(w)try{w.localStorage.setItem("posh-gh-token",v.trim());}catch(e){}alert("Token saved");};
 document.getElementById("barPub").onclick=function(){var w=win();if(w&&w.publishHotel)w.publishHotel(function(ok,err){alert(ok?"Published":String(err||"fail"));});};
 document.getElementById("barPull").onclick=function(){var w=win();if(w&&w.refreshHotel)w.refreshHotel(function(ok){alert(ok?"Refreshed":"Could not refresh");});};
@@ -69,8 +86,7 @@ document.getElementById("barFolio").onclick=function(){
   if(!name||!room){alert("Enter guest name and room on Desk first");return;}
   var hit=(w.db.rooms||[]).filter(function(r){return String(r.number)===String(room)&&r.site===w.user.site;})[0];
   if(!hit||hit.status!=="certified"){alert("Room "+room+" is not certified.");return;}
-  if(!w.db.checkins)w.db.checkins=[];
-  if(!w.db.debts)w.db.debts=[];
+  if(!w.db.checkins)w.db.checkins=[];if(!w.db.debts)w.db.debts=[];
   w.db.checkins.push({id:"c"+Date.now(),guest:name,room:room,amount:amount,debt:debt,debtNote:val(w,"cinDebtNote"),paidToday:paid,site:w.user.site,by:w.user.name,byId:w.user.id,day:w.today(),at:new Date().toLocaleString()});
   if(debt>0)w.db.debts.push({id:"db"+Date.now(),guest:name,room:room,site:w.user.site,amount:debt,remaining:debt,note:val(w,"cinDebtNote"),by:w.user.name,day:w.today(),at:new Date().toLocaleString(),payments:[]});
   if(paid>0&&typeof w.applyDebtPaidToday==="function")w.applyDebtPaidToday(paid,val(w,"cinPaidNote"),name,room);
@@ -92,7 +108,7 @@ function start(){
   frame=document.createElement("iframe");frame.src="app.html?v="+V;
   frame.onload=function(){
     var w=win();
-    loadInto(w,"desk.js").then(function(){return loadInto(w,"debtbox.js");}).then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"fdguard.js");}).then(function(){return loadInto(w,"hknote.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("32V READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("32V failed: "+err);});
+    loadInto(w,"desk.js").then(function(){return loadInto(w,"debtbox.js");}).then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"fdguard.js");}).then(function(){return loadInto(w,"hknote.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("32W READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("32W failed: "+err);});
   };
   document.body.appendChild(frame);
 }
