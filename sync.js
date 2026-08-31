@@ -21,6 +21,15 @@ function typing(){
   var a=document.activeElement;
   return !!(a&&(a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.tagName==="SELECT"));
 }
+function homeTab(){
+  if(typeof isKitchen==="function"&&isKitchen())return "meals";
+  if(typeof isLaundry==="function"&&isLaundry())return "laundry";
+  if(typeof isStore==="function"&&isStore())return "staff";
+  if(typeof isMaint==="function"&&isMaint())return "issues";
+  if(typeof isFD==="function"&&isFD())return "desk";
+  if(typeof isAcct==="function"&&isAcct())return "desk";
+  return "rooms";
+}
 function applyRemote(x){
   if(!x||!x.users||!x.users.length)return false;
   var st=stampOf(x);
@@ -118,9 +127,9 @@ function hookCloud(){
     var want=onlyPin(pending&&pending.pin);
     if(typed&&want&&typed===want){
       user=pending;pending=null;
-      tab=(typeof isKitchen==="function"&&isKitchen())?"meals":((typeof isLaundry==="function"&&isLaundry())?"laundry":((typeof isStore==="function"&&isStore())?"staff":((typeof isMaint==="function"&&isMaint())?"issues":"rooms")));
+      tab=homeTab();
       roomId=null;window.__poshForceDraw=true;draw();
-    }else alert("Wrong PIN. Front Desk VI A is 1103.");
+    }else alert("Wrong PIN.");
   };
 }
 var _vsC=viewStaff;
