@@ -4,43 +4,47 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-store">
-<title>Posh Manager Full 31T</title>
-<style>body{margin:0;font-family:system-ui,sans-serif;background:#0d1613;color:#f4efe6}#boot{padding:16px}</style>
+<title>Posh Manager Full 31U</title>
+<style>
+html,body{margin:0;background:#0d1613}
+#boot{margin:0;padding:10px 14px;background:#0d1613;color:#f4efe6;font:13px system-ui}
+#app{color:#111}
+</style>
 </head>
 <body>
-<p id=boot>Posh Manager full 31T — loading…</p>
+<p id=boot>Posh Manager full 31U — loading…</p>
 <div id="app"></div>
 <script>
 (function(){
   var boot=document.getElementById("boot");
   function addSrc(src,next){
     var s=document.createElement("script");
-    s.src=src;
+    s.src=src+"&t="+Date.now();
     s.onload=function(){ if(next)next(); };
     s.onerror=function(){ boot.textContent="Failed to load "+src; };
     document.body.appendChild(s);
   }
-  fetch("app.html?v=31T"+Date.now(),{cache:"reload"}).then(function(r){
+  fetch("app.html?v=31U"+Date.now(),{cache:"reload"}).then(function(r){
     if(!r.ok)throw new Error(r.status);
     return r.text();
   }).then(function(html){
     var style=html.match(/<style>([\s\S]*?)<\/style>/);
     if(style){
       var st=document.createElement("style");
-      st.textContent=style[1];
+      st.textContent=style[1]+" body{color:#111} .login{color:#fff} .top{color:#f4efe6}";
       document.head.appendChild(st);
     }
     var scripts=html.match(/<script>([\s\S]*?)<\/script>/);
     if(!scripts)throw new Error("app script missing");
-    var code=scripts[1].replace("<h1>Posh Certify</h1>","<h1>Posh Manager</h1><p>Full 31T</p>");
+    var code=scripts[1].replace("<h1>Posh Certify</h1>","<h1>Posh Manager</h1><p>Full 31U</p>");
     code=code.replace("Certify NG","Posh Manager");
     var s=document.createElement("script");
     s.textContent=code;
     document.body.appendChild(s);
-    addSrc("desk.js?v=31T",function(){
-      addSrc("loss.js?v=31T",function(){
-        addSrc("fixtures.js?v=31T",function(){
-          boot.textContent="Posh Manager full 31T — ready. Open Staff for backup.";
+    addSrc("desk.js?v=31U",function(){
+      addSrc("loss.js?v=31U",function(){
+        addSrc("fixtures.js?v=31U",function(){
+          boot.textContent="Posh Manager full 31U — ready";
         });
       });
     });
