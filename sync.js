@@ -15,6 +15,11 @@ function notify(title,body){
   if(Notification.permission!=="granted")return;
   try{new Notification(title,{body:body,tag:"posh-hotel"});}catch(e){}
 }
+function typing(){
+  if(window.__poshTyping && Date.now()-window.__poshTyping<20000)return true;
+  var a=document.activeElement;
+  return !!(a&&(a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.tagName==="SELECT"));
+}
 function applyRemote(x){
   if(!x||!x.users||!x.users.length)return false;
   var st=stampOf(x);
@@ -32,10 +37,12 @@ function headers(write){
   return h;
 }
 function pullCloud(done){
+  if(typing()){if(done)done(false);return;}
   fetch(PATH+"?t="+Date.now(),{cache:"no-store"}).then(function(r){
     if(!r.ok)throw new Error(r.status);
     return r.json();
   }).then(function(x){
+    if(typing()){if(done)done(false);return;}
     var ok=applyRemote(x);
     if(ok){try{draw();}catch(e){}}
     if(done)done(ok);
@@ -69,7 +76,7 @@ function pushCloud(done){
 var _save=save;
 save=function(){
   _save();
-  if(token())pushCloud();
+  if(token()&&!typing())pushCloud();
 };
 function cloudBox(){
   var on=!!token();
@@ -125,6 +132,7 @@ var _bC=bind;
 bind=function(){_bC();hookCloud();};
 var _drawC=draw;
 draw=function(){
+  if(typing()&&user)return;
   _drawC();
   hookCloud();
   if(!user){
