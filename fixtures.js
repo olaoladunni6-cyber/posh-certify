@@ -3,7 +3,6 @@ if(typeof db==="undefined")return;
 if(!db.fxPar)db.fxPar={};
 if(!db.fixtures)db.fixtures=[];
 function fxList(){return db.fixtures||[];}
-function roomKey(r){return String((r&&r.number)!=null?r.number:r);}
 function fxExpected(roomNo,id){
   var row=(db.fxPar||{})[String(roomNo)]||{};
   if(row[id]!=null&&String(row[id])!=="")return Number(row[id]||0);
@@ -17,6 +16,9 @@ function fxActual(r,id){
 }
 function fxShort(r,id){return Math.max(0,fxExpected(r.number,id)-fxActual(r,id));}
 fixtureMiss=function(r){return fxList().reduce(function(n,it){return n+fxShort(r,it.id);},0);};
+viewBackup=function(){
+  return "<div class=card><h3>Backup hotel data</h3><p>Download after every staff or room change. This phone keeps its own copy until you restore a file.</p><button class=btn id=dlBak>Download backup</button><p>Restore</p><input id=upBak type=file accept='application/json,.json'><button class='btn dark' id=doBak>Restore backup</button></div>";
+};
 function staffEditor(){
   var people=(db.users||[]).map(function(u){
     return "<div class=card><b>"+u.name+"</b> · "+roleName(u.role)+" · "+(u.site||"")+"<br><input data-en='"+u.id+"' value='"+u.name+"'>"+roleSel("er-"+u.id,u.role)+locSel("es-"+u.id,u.site)+"<input data-pinfor='"+u.id+"' placeholder='New PIN'><input data-ew='"+u.id+"' value='"+digits(u.whatsapp||"")+"' placeholder='WhatsApp'><br><button class='btn saveU' data-id='"+u.id+"'>Save</button> <button class='btn bad delU' data-id='"+u.id+"'>Remove</button></div>";
@@ -31,11 +33,11 @@ viewFixtures=function(){
     }).join("");
     return "<div class=card><h3>Room "+r.number+(r.site?" · "+r.site:"")+(r.type?" · "+r.type:"")+"</h3>"+cells+"<button class='btn saveFxPar' data-room='"+r.number+"'>Save Room "+r.number+"</button></div>";
   }).join("");
-  return "<h1>Fixture expected by room number</h1><div class=ok>Set how many of each item belong in each room. Housekeeper enters the actual count when cleaning that room. Missing = expected − actual.</div>"+(rows||"<p>Add rooms first.</p>")+"<div class=card><h3>Add fixture item</h3><input id=fxname placeholder='e.g. Wine glass'><input id=fxpar type=number min=0 value=1><button class=btn id=addFx>Save fixture</button></div>";
+  return "<h1>Fixture expected by room number</h1>"+(rows||"<p>Add rooms first.</p>")+"<div class=card><h3>Add fixture item</h3><input id=fxname placeholder='e.g. Wine glass'><input id=fxpar type=number min=0 value=1><button class=btn id=addFx>Save fixture</button></div>";
 };
 var _vsPrev=viewStaff;
 viewStaff=function(){
-  if(user&&user.role==="superadmin")return viewFixtures()+staffEditor();
+  if(user&&user.role==="superadmin")return viewBackup()+viewFixtures()+staffEditor();
   return _vsPrev();
 };
 laundryBox=function(r){
@@ -53,6 +55,30 @@ laundryBox=function(r){
 var _b2=bind;
 bind=function(){
   _b2();
+  var dlBak=document.getElementById("dlBak");
+  if(dlBak)dlBak.onclick=function(){
+    var blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="posh-backup-"+(typeof today==="function"?today():"data")+".json";
+    a.click();
+  };
+  var doBak=document.getElementById("doBak");
+  if(doBak)doBak.onclick=function(){
+    var inp=document.getElementById("upBak");
+    var f=inp&&inp.files&&inp.files[0];
+    if(!f){alert("Choose a backup file first");return;}
+    if(!confirm("Replace staff and rooms on this phone with the backup?"))return;
+    var rd=new FileReader();
+    rd.onload=function(){
+      try{
+        var x=JSON.parse(rd.result);
+        if(!x||!x.users)throw new Error("bad");
+        db=x;save();draw();
+      }catch(e){alert("Not a valid backup file");}
+    };
+    rd.readAsText(f);
+  };
   document.querySelectorAll(".saveFxPar").forEach(function(b){
     b.onclick=function(){
       if(!user||user.role!=="superadmin")return;
@@ -63,7 +89,7 @@ bind=function(){
         var n=parseInt(inp.value,10);
         db.fxPar[room][inp.getAttribute("data-item")]=n>=0?n:0;
       });
-      save();alert("Saved expected items for Room "+room+".");draw();
+      save();alert("Saved Room "+room);draw();
     };
   });
   var addFx=document.getElementById("addFx");
@@ -75,25 +101,6 @@ bind=function(){
     db.fixtures.push({id:"fx"+Date.now(),name:name,par:par});
     save();draw();
   };
-  var lrep=document.getElementById("lrep");
-  if(lrep){
-    var prevL=lrep.onclick;
-    lrep.onclick=function(){
-      if(!user||user.role!=="housekeeper")return;
-      var r=db.rooms.filter(function(x){return x.id===roomId;})[0];
-      if(!r)return;
-      var act={};
-      document.querySelectorAll(".fa").forEach(function(inp){
-        if(inp.value==="")return;
-        act[inp.getAttribute("data-item")]=parseInt(inp.value,10)||0;
-      });
-      r.fixtureActual=act;
-      var miss={};
-      fxList().forEach(function(it){var sh=fxShort(r,it.id);if(sh>0)miss[it.id]=sh;});
-      r.fixtureMiss=miss;
-      if(prevL)prevL();else{save();draw();}
-    };
-  }
 };
 try{draw();}catch(e){}
 })();
