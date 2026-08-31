@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
-<title>Posh Manager 32J</title>
+<meta http-equiv="Cache-Control" content="no-store">
+<title>Posh Manager 32K</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;color:#f4efe6;font-family:system-ui}
 #bar{padding:8px 10px;font-size:12px;font-weight:700;background:#c4a574;color:#101512}
@@ -18,7 +18,7 @@ iframe.tall{top:118px;height:calc(100% - 118px)}
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 32J — loading…</span>
+  <span id=msg>POSH MANAGER 32K — loading…</span>
   <div id=acts>
     <button type=button id=barIn>Clock in</button>
     <button type=button id=barOpen>Submit opening</button>
@@ -27,173 +27,93 @@ iframe.tall{top:118px;height:calc(100% - 118px)}
   </div>
 </div>
 <script>
-var V="20260831J"+Date.now();
+var V="20260831K"+Date.now();
 var frame;
 var OPEN=["Cash float counted and recorded","Keys / key cards collected","In-house occupancy reviewed","Expected arrivals reviewed","Expected departures / check-outs reviewed","Handover notes from last shift read","POS, printer and phone tested","Desk and uniform ready","Incident book checked","Duty manager informed I am on duty"];
 var CLOSE=["Cash float counted and handed over","Keys / key cards returned","Shift sales / folios completed","In-house and expected guests updated","Handover notes written for next shift","Incidents recorded","POS closed / printer cleared","Desk left tidy","Duty manager informed shift has ended"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
 function loadInto(w, src){
-  return fetch(src+"?v="+V,{cache:"reload"}).then(function(r){
-    if(!r.ok)throw new Error(src+" "+r.status);
-    return r.text();
-  }).then(function(code){
-    var s=w.document.createElement("script");
-    s.text=code;
-    w.document.body.appendChild(s);
-  });
+  return fetch(src+"?v="+V,{cache:"reload"}).then(function(r){if(!r.ok)throw new Error(src+" "+r.status);return r.text();}).then(function(code){var s=w.document.createElement("script");s.text=code;w.document.body.appendChild(s);});
+}
+function listOf(w,kind){
+  if(kind==="open"&&w.db&&w.db.fdOpenList&&w.db.fdOpenList.length)return w.db.fdOpenList;
+  if(kind==="close"&&w.db&&w.db.fdCloseList&&w.db.fdCloseList.length)return w.db.fdCloseList;
+  return kind==="open"?OPEN:CLOSE;
 }
 function dayOf(w){return w.today();}
 function clocked(w){
   if(!w.user||!w.db||!w.db.clocks)return null;
   var day=dayOf(w);
-  for(var i=0;i<w.db.clocks.length;i++){
-    var c=w.db.clocks[i];
-    if(c.day===day&&c.byId===w.user.id&&!c.outAt)return c;
-  }
+  for(var i=0;i<w.db.clocks.length;i++){var c=w.db.clocks[i];if(c.day===day&&c.byId===w.user.id&&!c.outAt)return c;}
   return null;
 }
 function check(w,kind){
   if(!w.user||!w.db||!w.db.fdChecks)return null;
   var day=dayOf(w);
-  for(var i=0;i<w.db.fdChecks.length;i++){
-    var c=w.db.fdChecks[i];
-    if(c.day===day&&c.byId===w.user.id&&c.kind===kind)return c;
-  }
+  for(var i=0;i<w.db.fdChecks.length;i++){var c=w.db.fdChecks[i];if(c.day===day&&c.byId===w.user.id&&c.kind===kind)return c;}
   return null;
 }
 function ticks(w,sel,list){
   var out=[], boxes=w.document.querySelectorAll(sel);
-  for(var i=0;i<boxes.length;i++){
-    if(!boxes[i].checked)continue;
-    var n=parseInt(boxes[i].getAttribute("data-i"),10);
-    if(list[n])out.push(list[n]);
-  }
+  for(var i=0;i<boxes.length;i++){if(!boxes[i].checked)continue;var n=parseInt(boxes[i].getAttribute("data-i"),10);if(list[n])out.push(list[n]);}
   return out;
 }
-function refresh(w){
-  try{w.save();}catch(e){}
-  w.__poshForceDraw=true;w.__poshTyping=0;
-  try{w.draw();}catch(e){}
-  paintBar();
-}
+function refresh(w){try{w.save();}catch(e){}w.__poshForceDraw=true;w.__poshTyping=0;try{w.draw();}catch(e){}paintBar();}
 function paintBar(){
-  var w=win();
-  var acts=document.getElementById("acts");
-  var fr=frame;
+  var w=win(),acts=document.getElementById("acts"),fr=frame;
   document.getElementById("barIn").style.display="none";
   document.getElementById("barOpen").style.display="none";
   document.getElementById("barClose").style.display="none";
   document.getElementById("barOut").style.display="none";
-  if(!w||!w.user||w.user.role!=="frontdesk"){
-    acts.className="";
-    if(fr)fr.className="";
-    if(w&&w.user)say(w.user.name+" · clock is Front Desk only");
-    return;
-  }
-  acts.className="on";
-  if(fr)fr.className="tall";
-  var site=w.user.site||"site";
-  var on=clocked(w), op=check(w,"open"), cl=check(w,"close");
-  if(!on&&!cl){
-    document.getElementById("barIn").style.display="inline-block";
-    document.getElementById("barIn").textContent="Clock in · "+site;
-    say("Front Desk · "+site+" · not clocked in");
-  }else if(on&&!op){
-    document.getElementById("barOpen").style.display="inline-block";
-    document.getElementById("barOpen").textContent="Submit opening · "+site;
-    say("On duty · "+site+" · tick the list, then Submit opening");
-  }else if(on&&op&&!cl){
-    document.getElementById("barClose").style.display="inline-block";
-    document.getElementById("barClose").textContent="Submit closing · "+site;
-    document.getElementById("barOut").style.display="inline-block";
-    document.getElementById("barOut").textContent="Clock out · "+site;
-    say("Opening sent · "+site+" · close at end of shift");
-  }else{
-    say("Shift closed · "+site);
-  }
+  if(!w||!w.user||w.user.role!=="frontdesk"){acts.className="";if(fr)fr.className="";if(w&&w.user)say(w.user.name+" · clock is Front Desk only");return;}
+  acts.className="on";if(fr)fr.className="tall";
+  var site=w.user.site||"site",on=clocked(w),op=check(w,"open"),cl=check(w,"close");
+  if(!on&&!cl){document.getElementById("barIn").style.display="inline-block";document.getElementById("barIn").textContent="Clock in · "+site;say("Front Desk · "+site+" · not clocked in");}
+  else if(on&&!op){document.getElementById("barOpen").style.display="inline-block";document.getElementById("barOpen").textContent="Submit opening · "+site;say("On duty · tick list then Submit opening");}
+  else if(on&&op&&!cl){document.getElementById("barClose").style.display="inline-block";document.getElementById("barClose").textContent="Submit closing · "+site;document.getElementById("barOut").style.display="inline-block";document.getElementById("barOut").textContent="Clock out · "+site;say("Opening sent · close at end of shift");}
+  else say("Shift closed · "+site);
 }
 document.getElementById("barIn").onclick=function(){
-  var w=win();
-  if(!w||!w.user||w.user.role!=="frontdesk"){alert("Only Front Desk can clock in");return;}
+  var w=win();if(!w||!w.user||w.user.role!=="frontdesk"){alert("Only Front Desk can clock in");return;}
   if(clocked(w)){alert("Already on duty");paintBar();return;}
   if(!w.db.clocks)w.db.clocks=[];
   var now=new Date().toLocaleTimeString();
   w.db.clocks.push({id:"ck"+Date.now(),day:dayOf(w),site:w.user.site,by:w.user.name,byId:w.user.id,shift:w.user.shift||"",inAt:now,outAt:""});
-  refresh(w);
-  alert("Clocked in at "+w.user.site+"\n"+now+"\nNow tick every opening item in the page, then tap Submit opening on this gold bar.");
+  refresh(w);alert("Clocked in at "+w.user.site+"\n"+now);
 };
 document.getElementById("barOpen").onclick=function(){
-  var w=win();
-  if(!w||!w.user||w.user.role!=="frontdesk")return;
-  if(!clocked(w)){alert("Clock in first");return;}
-  if(check(w,"open")){alert("Opening list already sent");paintBar();return;}
-  var items=ticks(w,".fdOpenTick",OPEN);
-  if(!items.length)items=ticks(w,".fdck",OPEN);
-  if(items.length<OPEN.length){
-    if(confirm("Not every box is ticked. Submit opening list anyway and confirm all items were done?"))items=OPEN.slice();
-    else return;
-  }
-  var note="";
+  var w=win();if(!w||!w.user||w.user.role!=="frontdesk")return;
+  if(!clocked(w)){alert("Clock in first");return;}if(check(w,"open")){alert("Already sent");return;}
+  var list=listOf(w,"open");var items=ticks(w,".fdOpenTick",list);if(!items.length)items=ticks(w,".fdck",list);
+  if(items.length<list.length){if(!confirm("Not every box is ticked. Submit anyway?"))return;items=list.slice();}
   var n1=w.document.getElementById("fdOpenNote")||w.document.getElementById("fdNote");
-  if(n1)note=(n1.value||"").trim();
   if(!w.db.fdChecks)w.db.fdChecks=[];
-  w.db.fdChecks.push({id:"fc"+Date.now(),day:dayOf(w),site:w.user.site,kind:"open",by:w.user.name,byId:w.user.id,items:items,note:note,at:new Date().toLocaleString(),seen:false,seenBy:""});
-  refresh(w);
-  alert("Opening checklist submitted for "+w.user.site);
+  w.db.fdChecks.push({id:"fc"+Date.now(),day:dayOf(w),site:w.user.site,kind:"open",by:w.user.name,byId:w.user.id,items:items,note:n1?(n1.value||"").trim():"",at:new Date().toLocaleString(),seen:false,seenBy:""});
+  refresh(w);alert("Opening checklist submitted");
 };
 document.getElementById("barClose").onclick=function(){
-  var w=win();
-  if(!w||!w.user||w.user.role!=="frontdesk")return;
-  var ck=clocked(w);
-  if(!ck){alert("You are not clocked in");return;}
-  if(!check(w,"open")){alert("Submit opening first");return;}
-  var items=ticks(w,".fdCloseTick",CLOSE);
-  if(!items.length)items=ticks(w,".fdclose",CLOSE);
-  if(items.length<CLOSE.length){
-    if(confirm("Not every closing box is ticked. Submit closing anyway?"))items=CLOSE.slice();
-    else return;
-  }
-  var note="";
+  var w=win();if(!w||!w.user||w.user.role!=="frontdesk")return;
+  var ck=clocked(w);if(!ck){alert("Not clocked in");return;}if(!check(w,"open")){alert("Submit opening first");return;}
+  var list=listOf(w,"close");var items=ticks(w,".fdCloseTick",list);if(!items.length)items=ticks(w,".fdclose",list);
+  if(items.length<list.length){if(!confirm("Not every closing box is ticked. Submit anyway?"))return;items=list.slice();}
   var n1=w.document.getElementById("fdCloseNote");
-  if(n1)note=(n1.value||"").trim();
   ck.outAt=new Date().toLocaleTimeString();
   if(!w.db.fdChecks)w.db.fdChecks=[];
-  w.db.fdChecks.push({id:"fc"+Date.now(),day:dayOf(w),site:w.user.site,kind:"close",by:w.user.name,byId:w.user.id,items:items,note:note,at:new Date().toLocaleString(),seen:false,seenBy:""});
-  refresh(w);
-  alert("Closing checklist submitted. Clocked out at "+ck.outAt);
+  w.db.fdChecks.push({id:"fc"+Date.now(),day:dayOf(w),site:w.user.site,kind:"close",by:w.user.name,byId:w.user.id,items:items,note:n1?(n1.value||"").trim():"",at:new Date().toLocaleString(),seen:false,seenBy:""});
+  refresh(w);alert("Closed at "+ck.outAt);
 };
-document.getElementById("barOut").onclick=function(){
-  document.getElementById("barClose").click();
-};
+document.getElementById("barOut").onclick=function(){document.getElementById("barClose").click();};
 function start(){
-  frame=document.createElement("iframe");
-  frame.setAttribute("allow","notifications; camera; microphone");
-  frame.src="app.html?v="+V;
+  frame=document.createElement("iframe");frame.setAttribute("allow","notifications; camera; microphone");frame.src="app.html?v="+V;
   frame.onload=function(){
-    var w=win();
-    if(!w){say("32J failed to open app");return;}
-    loadInto(w,"desk.js")
-      .then(function(){return loadInto(w,"fdclock.js");})
-      .then(function(){return loadInto(w,"clock.js");})
-      .then(function(){return loadInto(w,"loss.js");})
-      .then(function(){return loadInto(w,"fixtures.js");})
-      .then(function(){return loadInto(w,"evidence.js");})
-      .then(function(){return loadInto(w,"sync.js");})
-      .then(function(){
-        say("32J READY");
-        try{if(w.draw)w.draw();}catch(e){}
-        paintBar();
-      }).catch(function(err){say("32J failed: "+err);});
+    var w=win();if(!w){say("32K failed");return;}
+    loadInto(w,"desk.js").then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("32K READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("32K failed: "+err);});
   };
   document.body.appendChild(frame);
 }
 setInterval(paintBar,1000);
-if(navigator.serviceWorker){
-  navigator.serviceWorker.getRegistrations().then(function(list){
-    return Promise.all(list.map(function(r){return r.unregister();}));
-  }).then(start).catch(start);
-}else start();
+if(navigator.serviceWorker){navigator.serviceWorker.getRegistrations().then(function(list){return Promise.all(list.map(function(r){return r.unregister();}));}).then(start).catch(start);}else start();
 </script>
 </body>
 </html>
