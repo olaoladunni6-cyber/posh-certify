@@ -16,9 +16,7 @@ function unionById(a,b){
 }
 function slim(src){
   var x=JSON.parse(JSON.stringify(src||db));
-  (x.rooms||[]).forEach(function(r){
-    r.photos={};r.video="";
-  });
+  (x.rooms||[]).forEach(function(r){r.photos={};r.video="";});
   return x;
 }
 function stampOf(x){
@@ -53,15 +51,6 @@ function applyRemote(x){
   db.fdChecks=unionById(x.fdChecks,keep.fdChecks);
   db.debts=unionById(x.debts,keep.debts);
   db.shiftReports=unionById(x.shiftReports,keep.shiftReports);
-  if(keep.rooms&&keep.rooms.length){
-    var map={};
-    keep.rooms.forEach(function(r){map[r.id]=r;});
-    (db.rooms||[]).forEach(function(r){
-      if(map[r.id]&&map[r.id].status&&map[r.id].status!=="pending"){
-        if(!r.status||r.status==="pending")r.status=map[r.id].status;
-      }
-    });
-  }
   try{localStorage.setItem(typeof KEY==="string"?KEY:"posh-full-v13",JSON.stringify(db));}catch(e){}
   lastStamp=stampOf(db);
   return true;
@@ -162,16 +151,9 @@ draw=function(){
   if(typing()&&user)return;
   _drawC();
   hookCloud();
-  if(!user){
-    var login=document.querySelector(".login");
-    if(login&&!document.getElementById("pullCloud")){
-      var wrap=document.createElement("div");
-      wrap.innerHTML=cloudBox();
-      login.appendChild(wrap);
-      hookCloud();
-    }
-  }
 };
+window.publishHotel=pushCloud;
+window.refreshHotel=pullCloud;
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});
 pullCloud();
 setInterval(function(){pullCloud();},30000);
