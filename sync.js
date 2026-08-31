@@ -8,6 +8,7 @@ var pushing=false;
 var lastStamp="";
 function token(){return (localStorage.getItem(TOKEN_KEY)||"").trim();}
 function setToken(t){t=String(t||"").trim();if(t)localStorage.setItem(TOKEN_KEY,t);}
+function onlyPin(s){return String(s||"").replace(/\D/g,"");}
 function stampOf(x){return String((x&&x.updated)||"")+"|"+(x&&x.users?x.users.length:0)+"|"+(x&&x.rooms?x.rooms.length:0)+"|"+(x&&x.issues?x.issues.length:0)+"|"+(x&&x.shiftReports?x.shiftReports.length:0);}
 function notify(title,body){
   if(!("Notification" in window))return;
@@ -103,6 +104,16 @@ function hookCloud(){
       draw();
     });
   };
+  var pinok=document.getElementById("pinok");
+  if(pinok)pinok.onclick=function(){
+    var typed=onlyPin(document.getElementById("pinbox").value);
+    var want=onlyPin(pending&&pending.pin);
+    if(typed&&want&&typed===want){
+      user=pending;pending=null;
+      tab=(typeof isKitchen==="function"&&isKitchen())?"meals":((typeof isLaundry==="function"&&isLaundry())?"laundry":((typeof isStore==="function"&&isStore())?"staff":((typeof isMaint==="function"&&isMaint())?"issues":"rooms")));
+      roomId=null;draw();
+    }else alert("Wrong PIN. Front Desk VI A is 1103.");
+  };
 }
 var _vsC=viewStaff;
 viewStaff=function(){
@@ -115,6 +126,7 @@ bind=function(){_bC();hookCloud();};
 var _drawC=draw;
 draw=function(){
   _drawC();
+  hookCloud();
   if(!user){
     var login=document.querySelector(".login");
     if(login&&!document.getElementById("pullCloud")){
