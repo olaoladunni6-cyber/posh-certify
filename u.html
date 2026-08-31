@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en-NG">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store">
+<title>Posh Manager 31U</title>
+<style>
+html,body{margin:0;background:#1c332c}
+#boot{margin:0;padding:10px 14px;background:#0d1613;color:#f4efe6;font:13px system-ui}
+#app .acct,#app .card,#app .room,#app .wrap,#app .wrap p,#app .wrap h1,#app .wrap h3,#app input,#app select,#app textarea{color:#111 !important}
+#app .login > h1,#app .login > p{color:#f4efe6 !important}
+#app .top,#app .top span{color:#f4efe6 !important}
+#app .btn{color:#111 !important}
+#app .btn.bad,#app .btn.dark{color:#fff !important}
+</style>
+</head>
+<body>
+<p id=boot>Posh Manager 31U — loading…</p>
+<div id="app"></div>
+<script>
+(function(){
+  var boot=document.getElementById("boot");
+  function addSrc(src,next){
+    var s=document.createElement("script");
+    s.src=src+"&n="+Date.now();
+    s.onload=function(){ if(next)next(); };
+    s.onerror=function(){ boot.textContent="Failed to load "+src; };
+    document.body.appendChild(s);
+  }
+  fetch("app.html?v=31U"+Date.now(),{cache:"reload"}).then(function(r){
+    if(!r.ok)throw new Error(r.status);
+    return r.text();
+  }).then(function(html){
+    var style=html.match(/<style>([\s\S]*?)<\/style>/);
+    if(style){
+      var st=document.createElement("style");
+      st.textContent=style[1];
+      document.head.appendChild(st);
+    }
+    var scripts=html.match(/<script>([\s\S]*?)<\/script>/);
+    if(!scripts)throw new Error("app script missing");
+    var code=scripts[1].replace("<h1>Posh Certify</h1>","<h1>Posh Manager</h1>");
+    code=code.replace("Certify NG","Posh Manager");
+    var s=document.createElement("script");
+    s.textContent=code;
+    document.body.appendChild(s);
+    addSrc("desk.js?v=31U",function(){
+      addSrc("loss.js?v=31U",function(){
+        addSrc("fixtures.js?v=31U",function(){
+          boot.textContent="Posh Manager 31U — ready";
+        });
+      });
+    });
+  }).catch(function(e){
+    boot.textContent="Could not start: "+e;
+  });
+})();
+</script>
+</body>
+</html>
