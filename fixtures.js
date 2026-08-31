@@ -40,7 +40,8 @@ viewFixtures=function(){
 };
 var _vsPrev=viewStaff;
 viewStaff=function(){
-  if(user&&user.role==="superadmin")return viewBackup()+viewFixtures()+staffEditor();
+  var clock=(typeof clockBox==="function"?clockBox():"");
+  if(user&&user.role==="superadmin")return clock+viewBackup()+viewFixtures()+staffEditor();
   return _vsPrev();
 };
 laundryBox=function(r){
