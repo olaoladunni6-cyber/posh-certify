@@ -3,16 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Cache-Control" content="no-store">
-<title>Posh Manager Phone</title>
-<style>html,body{margin:0;height:100%;background:#1c332c;color:#f4efe6;font-family:system-ui}#bar{padding:10px 14px;font-size:13px}iframe{position:fixed;top:36px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 36px);border:0}</style>
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<title>Posh Manager 31B</title>
+<style>
+html,body{margin:0;height:100%;background:#1c332c;color:#f4efe6;font-family:system-ui}
+#bar{padding:10px 14px;font-size:13px;font-weight:700;background:#c4a574;color:#101512}
+iframe{position:fixed;top:40px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 40px);border:0}
+</style>
 </head>
 <body>
-<div id=bar>Posh Manager phone build 31P — loading modules…</div>
+<div id=bar>POSH MANAGER 31B — wiping old cache…</div>
 <script>
-var V="31P"+Date.now();
+var V="20260831B"+Date.now();
 function loadInto(win, src){
-  return fetch(src+"?v="+V,{cache:"reload"}).then(function(r){return r.text();}).then(function(code){
+  return fetch(src+"?v="+V,{cache:"reload"}).then(function(r){
+    if(!r.ok)throw new Error(src+" "+r.status);
+    return r.text();
+  }).then(function(code){
     var s=win.document.createElement("script");
     s.text=code;
     win.document.body.appendChild(s);
@@ -23,21 +30,29 @@ function start(){
   f.src="app.html?v="+V;
   f.onload=function(){
     var win=f.contentWindow;
-    if(!win||!win.document){document.getElementById("bar").textContent="Phone could not open the app.";return;}
+    if(!win||!win.document){document.getElementById("bar").textContent="31B failed to open app.html";return;}
+    try{win.document.title="Posh Manager 31B";}catch(e){}
     loadInto(win,"desk.js").then(function(){return loadInto(win,"loss.js");}).then(function(){return loadInto(win,"fixtures.js");}).then(function(){
-      document.getElementById("bar").textContent="Posh Manager phone build 31P — ready. Staff use this page.";
+      document.getElementById("bar").textContent="POSH MANAGER 31B READY — fixtures by room number";
       try{if(win.draw)win.draw();}catch(e){}
     }).catch(function(err){
-      document.getElementById("bar").textContent="Module load failed: "+err;
+      document.getElementById("bar").textContent="31B module failed: "+err;
     });
   };
   document.body.appendChild(f);
 }
-if(navigator.serviceWorker){
-  navigator.serviceWorker.getRegistrations().then(function(list){
-    return Promise.all(list.map(function(r){return r.unregister();}));
+function wipeThenStart(){
+  var p=Promise.resolve();
+  if(navigator.serviceWorker){
+    p=navigator.serviceWorker.getRegistrations().then(function(list){
+      return Promise.all(list.map(function(r){return r.unregister();}));
+    });
+  }
+  p.then(function(){
+    if(window.caches)return caches.keys().then(function(keys){return Promise.all(keys.map(function(k){return caches.delete(k);}));});
   }).then(start).catch(start);
-}else start();
+}
+wipeThenStart();
 </script>
 </body>
 </html>
