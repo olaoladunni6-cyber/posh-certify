@@ -16,6 +16,7 @@ function notify(title,body){
   try{new Notification(title,{body:body,tag:"posh-hotel"});}catch(e){}
 }
 function typing(){
+  if(window.__poshForceDraw)return false;
   if(window.__poshTyping && Date.now()-window.__poshTyping<20000)return true;
   var a=document.activeElement;
   return !!(a&&(a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.tagName==="SELECT"));
@@ -94,7 +95,7 @@ function hookCloud(){
     if(!v){alert("Paste the token first");return;}
     setToken(v);
     alert("Token saved on this device. Tap Publish this device now.");
-    draw();
+    window.__poshForceDraw=true;draw();
   };
   var pull=document.getElementById("pullCloud");
   if(pull)pull.onclick=function(){pullCloud(function(ok){alert(ok?"Updated from the shared list.":"Could not read the shared list.");});};
@@ -108,7 +109,7 @@ function hookCloud(){
     if(!("Notification" in window)){alert("This phone cannot show banners");return;}
     Notification.requestPermission().then(function(p){
       if(p==="granted")notify("Posh Manager","Alerts are on");
-      draw();
+      window.__poshForceDraw=true;draw();
     });
   };
   var pinok=document.getElementById("pinok");
@@ -118,7 +119,7 @@ function hookCloud(){
     if(typed&&want&&typed===want){
       user=pending;pending=null;
       tab=(typeof isKitchen==="function"&&isKitchen())?"meals":((typeof isLaundry==="function"&&isLaundry())?"laundry":((typeof isStore==="function"&&isStore())?"staff":((typeof isMaint==="function"&&isMaint())?"issues":"rooms")));
-      roomId=null;draw();
+      roomId=null;window.__poshForceDraw=true;draw();
     }else alert("Wrong PIN. Front Desk VI A is 1103.");
   };
 }
