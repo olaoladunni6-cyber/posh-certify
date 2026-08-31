@@ -18,19 +18,17 @@ function slim(src){
   var x=JSON.parse(JSON.stringify(src||db));
   (x.rooms||[]).forEach(function(r){
     var has=!!(r.video||(r.photos&&r.photos.Walkthrough)||r.videoReady);
-    r.photos={};
-    r.video="";
-    r.videoReady=has;
+    r.photos={};r.video="";r.videoReady=has;
   });
   return x;
 }
 function stampOf(x){
-  return String((x&&x.updated)||"")+"|c"+(x&&x.checkins?x.checkins.length:0)+"|u"+(x&&x.users?x.users.length:0)+"|r"+(x&&x.rooms?x.rooms.length:0)+"|v"+(x&&x.rooms?x.rooms.filter(function(r){return r.videoReady||r.status==="submitted";}).length:0);
+  return String((x&&x.updated)||"")+"|c"+(x&&x.checkins?x.checkins.length:0)+"|r"+(x&&x.rooms?x.rooms.length:0)+"|o"+(x&&x.rooms?x.rooms.filter(function(r){return r.status==="ooo";}).length:0);
 }
 function applyRemote(x){
   if(!x||!x.users||!x.users.length)return false;
   var keepRooms=db.rooms||[];
-  var keep={checkins:db.checkins,clocks:db.clocks,fdChecks:db.fdChecks,debts:db.debts,shiftReports:db.shiftReports,slips:db.slips};
+  var keep={checkins:db.checkins,clocks:db.clocks,fdChecks:db.fdChecks,debts:db.debts,shiftReports:db.shiftReports,slips:db.slips,deskNotes:db.deskNotes,issues:db.issues};
   db=x;
   db.checkins=unionById(x.checkins,keep.checkins);
   db.clocks=unionById(x.clocks,keep.clocks);
@@ -38,6 +36,8 @@ function applyRemote(x){
   db.debts=unionById(x.debts,keep.debts);
   db.shiftReports=unionById(x.shiftReports,keep.shiftReports);
   db.slips=unionById(x.slips,keep.slips);
+  db.deskNotes=unionById(x.deskNotes,keep.deskNotes);
+  db.issues=unionById(x.issues,keep.issues);
   var map={};
   keepRooms.forEach(function(r){map[r.id]=r;});
   (db.rooms||[]).forEach(function(r){
@@ -46,7 +46,6 @@ function applyRemote(x){
     if(loc.video)r.video=loc.video;
     if(loc.photos&&loc.photos.Walkthrough){if(!r.photos)r.photos={};r.photos.Walkthrough=loc.photos.Walkthrough;}
     if(loc.videoReady||loc.video)r.videoReady=true;
-    if(loc.status==="submitted"||loc.status==="certified")r.status=loc.status;
   });
   try{localStorage.setItem(typeof KEY==="string"?KEY:"posh-full-v13",JSON.stringify(db));}catch(e){}
   lastStamp=stampOf(db);
