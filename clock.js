@@ -2,33 +2,21 @@
 if(typeof db==="undefined")return;
 if(!db.clocks)db.clocks=[];
 if(!db.fdChecks)db.fdChecks=[];
-var OPEN_LIST=[
-  ["float","Cash float counted and recorded"],
-  ["keys","Keys / key cards collected"],
-  ["inhouse","In-house occupancy reviewed"],
-  ["arrivals","Expected arrivals reviewed"],
-  ["departures","Expected departures / check-outs reviewed"],
-  ["handover","Handover notes from last shift read"],
-  ["pos","POS, printer and phone tested"],
-  ["desk","Desk and uniform ready"],
-  ["incidents","Incident book checked"],
-  ["dm","Duty manager informed I am on duty"]
-];
-var CLOSE_LIST=[
-  ["cfloat","Cash float counted and handed over"],
-  ["ckeys","Keys / key cards returned"],
-  ["csales","Shift sales / folios completed"],
-  ["cocc","In-house and expected guests updated"],
-  ["chand","Handover notes written for next shift"],
-  ["cinc","Incidents recorded"],
-  ["cpos","POS closed / printer cleared"],
-  ["cdesk","Desk left tidy"],
-  ["cdm","Duty manager informed shift has ended"]
-];
+var OPEN_SEED=["Cash float counted and recorded","Keys / key cards collected","In-house occupancy reviewed","Expected arrivals reviewed","Expected departures / check-outs reviewed","Handover notes from last shift read","POS, printer and phone tested","Desk and uniform ready","Incident book checked","Duty manager informed I am on duty"];
+var CLOSE_SEED=["Cash float counted and handed over","Keys / key cards returned","Shift sales / folios completed","In-house and expected guests updated","Handover notes written for next shift","Incidents recorded","POS closed / printer cleared","Desk left tidy","Duty manager informed shift has ended"];
+if(!db.fdOpenList||!db.fdOpenList.length)db.fdOpenList=OPEN_SEED.slice();
+if(!db.fdCloseList||!db.fdCloseList.length)db.fdCloseList=CLOSE_SEED.slice();
+function openList(){return (db.fdOpenList&&db.fdOpenList.length)?db.fdOpenList:OPEN_SEED;}
+function closeList(){return (db.fdCloseList&&db.fdCloseList.length)?db.fdCloseList:CLOSE_SEED;}
 function todayClocks(){return (db.clocks||[]).filter(function(c){return c.day===today()&&siteMatch(c.site);});}
 function myOpenClock(){return (db.clocks||[]).filter(function(c){return c.day===today()&&c.byId===user.id&&!c.outAt;})[0];}
 function todayCheck(uid,kind){return (db.fdChecks||[]).filter(function(c){return c.day===today()&&c.byId===uid&&c.kind===kind;})[0];}
 function checksToday(){return (db.fdChecks||[]).filter(function(c){return c.day===today()&&siteMatch(c.site);}).slice().reverse();}
+function ticks(list,cls){return list.map(function(name,i){return "<label class=row><span>"+name+"</span><input type=checkbox class='"+cls+"' data-i='"+i+"'></label>";}).join("");}
+function editLists(){
+  if(!isSuper())return "";
+  return "<div class=card><h3>Edit front desk checklists</h3><p>One item per line.</p><p>Opening</p><textarea id=editOpen>"+openList().join("\n")+"</textarea><p>Closing</p><textarea id=editClose>"+closeList().join("\n")+"</textarea><button class=btn id=saveLists>Save checklists</button></div>";
+}
 function clockBox(){
   if(!user)return "";
   if(!isFD()){
@@ -41,7 +29,7 @@ function clockBox(){
       var ack=mgr()&&!c.seen?"<button class='btn ackFD' data-id='"+c.id+"'>Acknowledge</button>":(c.seen?"<p>Seen by "+c.seenBy+"</p>":"");
       return "<div class=card><b>"+c.by+" · "+(c.kind==="close"?"Closing":"Opening")+" checklist</b><br>"+c.at+items+(c.note?("<p>"+c.note+"</p>"):"")+ack+"</div>";
     }).join("");
-    return "<div class=card><h3>Front desk clock today</h3>"+(list||"<p>No one clocked in yet.</p>")+"</div>"+(checks||"");
+    return "<div class=card><h3>Front desk clock today</h3>"+(list||"<p>No one clocked in yet.</p>")+"</div>"+(checks||"")+editLists();
   }
   var open=myOpenClock();
   var opened=todayCheck(user.id,"open");
@@ -51,13 +39,9 @@ function clockBox(){
   else if(open)clock="<div class=ok>Clocked in at "+open.inAt+" · "+user.site+" · shift "+(user.shift||"")+"</div>";
   else clock="<div class=warn>Clock in before you take guests.</div><button class=btn id=clockIn>Clock in — I am on duty</button>";
   var form="";
-  if(open&&!opened){
-    form="<div class=card><h3>Opening checklist — send to duty manager</h3>"+OPEN_LIST.map(function(it){return "<label class=row><span>"+it[1]+"</span><input type=checkbox class=fdck data-k='"+it[0]+"'></label>";}).join("")+"<textarea id=fdNote placeholder='Notes for duty manager (optional)'></textarea><button class=btn id=sendFDCheck>Submit opening checklist</button></div>";
-  }
+  if(open&&!opened)form="<div class=card><h3>Opening checklist — send to duty manager</h3>"+ticks(openList(),"fdck")+"<textarea id=fdNote placeholder='Notes for duty manager (optional)'></textarea><button class=btn id=sendFDCheck>Submit opening checklist</button></div>";
   if(opened&&!closed)form+="<div class=ok>Opening checklist submitted at "+opened.at+(opened.seen?(" · seen by "+opened.seenBy):" · waiting for duty manager")+".</div>";
-  if(open&&opened&&!closed){
-    form+="<div class=card><h3>Closing checklist — clock out</h3>"+CLOSE_LIST.map(function(it){return "<label class=row><span>"+it[1]+"</span><input type=checkbox class=fdclose data-k='"+it[0]+"'></label>";}).join("")+"<textarea id=fdCloseNote placeholder='Handover notes for next shift'></textarea><button class='btn dark' id=sendFDClose>Submit closing checklist and clock out</button></div>";
-  }
+  if(open&&opened&&!closed)form+="<div class=card><h3>Closing checklist — clock out</h3>"+ticks(closeList(),"fdclose")+"<textarea id=fdCloseNote placeholder='Handover notes for next shift'></textarea><button class='btn dark' id=sendFDClose>Submit closing checklist and clock out</button></div>";
   if(closed)form+="<div class=ok>Closing checklist submitted at "+closed.at+(closed.seen?(" · seen by "+closed.seenBy):" · waiting for duty manager")+".</div>";
   return "<div class=card><h3>Shift clock</h3>"+clock+"</div>"+form;
 }
@@ -75,9 +59,8 @@ function collect(sel,list){
   var items=[];
   document.querySelectorAll(sel).forEach(function(box){
     if(!box.checked)return;
-    var k=box.getAttribute("data-k");
-    var row=list.filter(function(x){return x[0]===k;})[0];
-    if(row)items.push(row[1]);
+    var i=parseInt(box.getAttribute("data-i"),10);
+    if(list[i])items.push(list[i]);
   });
   return items;
 }
@@ -96,8 +79,9 @@ bind=function(){
   if(send)send.onclick=function(){
     if(!isFD()||!myOpenClock()){alert("Clock in first");return;}
     if(todayCheck(user.id,"open"))return;
-    var items=collect(".fdck",OPEN_LIST);
-    if(items.length<OPEN_LIST.length){alert("Tick every opening item");return;}
+    var list=openList();
+    var items=collect(".fdck",list);
+    if(items.length<list.length){alert("Tick every opening item");return;}
     var note=(document.getElementById("fdNote")&&document.getElementById("fdNote").value||"").trim();
     db.fdChecks.push({id:"fc"+Date.now(),day:today(),site:workSite(),kind:"open",by:user.name,byId:user.id,items:items,note:note,at:new Date().toLocaleString(),seen:false,seenBy:""});
     save();
@@ -110,14 +94,23 @@ bind=function(){
     var ck=myOpenClock();
     if(!ck){alert("You are not clocked in");return;}
     if(!todayCheck(user.id,"open")){alert("Submit the opening checklist first");return;}
-    var items=collect(".fdclose",CLOSE_LIST);
-    if(items.length<CLOSE_LIST.length){alert("Tick every closing item");return;}
+    var list=closeList();
+    var items=collect(".fdclose",list);
+    if(items.length<list.length){alert("Tick every closing item");return;}
     var note=(document.getElementById("fdCloseNote")&&document.getElementById("fdCloseNote").value||"").trim();
     ck.outAt=new Date().toLocaleTimeString();
     db.fdChecks.push({id:"fc"+Date.now(),day:today(),site:workSite(),kind:"close",by:user.name,byId:user.id,items:items,note:note,at:new Date().toLocaleString(),seen:false,seenBy:""});
     save();
     if(typeof pingMgrGm==="function")pingMgrGm("POSH CLOCK-OUT\n"+user.name+"\n"+workSite()+"\n"+ck.outAt+"\n"+items.join("\n")+(note?("\nHandover: "+note):""));
     draw();
+  };
+  var saveLists=document.getElementById("saveLists");
+  if(saveLists)saveLists.onclick=function(){
+    if(!isSuper())return;
+    db.fdOpenList=(document.getElementById("editOpen").value||"").split("\n").map(function(s){return s.trim();}).filter(Boolean);
+    db.fdCloseList=(document.getElementById("editClose").value||"").split("\n").map(function(s){return s.trim();}).filter(Boolean);
+    if(!db.fdOpenList.length||!db.fdCloseList.length){alert("Keep at least one item on each list");return;}
+    save();alert("Checklists saved. Publish if this laptop should update the phones.");draw();
   };
   document.querySelectorAll(".ackFD").forEach(function(b){
     b.onclick=function(){
