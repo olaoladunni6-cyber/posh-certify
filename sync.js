@@ -5,12 +5,23 @@ var REPO="olaoladunni6-cyber/posh-certify";
 var PATH="live.json";
 var API="https://api.github.com/repos/"+REPO+"/contents/"+PATH;
 var pushing=false;
+var lastStamp="";
 function token(){return (localStorage.getItem(TOKEN_KEY)||"").trim();}
 function setToken(t){t=String(t||"").trim();if(t)localStorage.setItem(TOKEN_KEY,t);}
+function stampOf(x){return String((x&&x.updated)||"")+"|"+(x&&x.users?x.users.length:0)+"|"+(x&&x.rooms?x.rooms.length:0)+"|"+(x&&x.issues?x.issues.length:0)+"|"+(x&&x.shiftReports?x.shiftReports.length:0);}
+function notify(title,body){
+  if(!("Notification" in window))return;
+  if(Notification.permission!=="granted")return;
+  try{new Notification(title,{body:body,tag:"posh-hotel"});}catch(e){}
+}
 function applyRemote(x){
   if(!x||!x.users||!x.users.length)return false;
+  var st=stampOf(x);
+  var changed=lastStamp&&st!==lastStamp;
   db=x;
   try{localStorage.setItem(typeof KEY==="string"?KEY:"posh-full-v13",JSON.stringify(db));}catch(e){}
+  if(changed)notify("Posh Manager","Hotel list updated");
+  lastStamp=st;
   return true;
 }
 function headers(write){
@@ -33,12 +44,13 @@ function pushCloud(done){
   if(!token()){if(done)done(false,"No GitHub token on this phone");return;}
   if(pushing){if(done)done(false,"Busy");return;}
   pushing=true;
+  db.updated=new Date().toISOString();
   fetch(API,{headers:headers(false)}).then(function(r){
     if(!r.ok)throw new Error("read "+r.status);
     return r.json();
   }).then(function(meta){
     var body=JSON.stringify({
-      message:"Posh Manager live hotel "+new Date().toISOString(),
+      message:"Posh Manager live hotel "+db.updated,
       content:btoa(unescape(encodeURIComponent(JSON.stringify(db)))),
       sha:meta.sha
     });
@@ -46,6 +58,7 @@ function pushCloud(done){
   }).then(function(r){
     pushing=false;
     if(!r.ok)throw new Error("write "+r.status);
+    lastStamp=stampOf(db);
     if(done)done(true);
   }).catch(function(err){
     pushing=false;
@@ -59,10 +72,12 @@ save=function(){
 };
 function cloudBox(){
   var on=!!token();
+  var perm=("Notification" in window)?Notification.permission:"denied";
   return "<div class=card><h3>Shared hotel</h3>"+
     "<p>"+(on?"This device can publish to all phones.":"Paste the GitHub token once so this device can publish.")+"</p>"+
     "<input id=ghTok type=password placeholder='GitHub token'><button class=btn id=saveTok>Save token</button>"+
-    "<p><button class=btn id=pullCloud>Refresh from shared list</button> <button class=btn id=pushCloud>Publish this device now</button></p></div>";
+    "<p><button class=btn id=pullCloud>Refresh from shared list</button> <button class=btn id=pushCloud>Publish this device now</button></p>"+
+    (perm==="granted"?"<p>Phone alerts are on.</p>":"<p><button class=btn id=allowAlert>Allow phone alerts</button></p>")+"</div>";
 }
 function hookCloud(){
   var saveTok=document.getElementById("saveTok");
@@ -79,6 +94,14 @@ function hookCloud(){
   if(push)push.onclick=function(){
     if(!token()){alert("Save the GitHub token on this device first");return;}
     pushCloud(function(ok,err){alert(ok?"Published. Other phones can Refresh.":("Publish failed. "+(err||"")));});
+  };
+  var al=document.getElementById("allowAlert");
+  if(al)al.onclick=function(){
+    if(!("Notification" in window)){alert("This phone cannot show banners");return;}
+    Notification.requestPermission().then(function(p){
+      if(p==="granted")notify("Posh Manager","Alerts are on");
+      draw();
+    });
   };
 }
 var _vsC=viewStaff;
@@ -102,6 +125,7 @@ draw=function(){
     }
   }
 };
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});
 pullCloud();
 setInterval(function(){pullCloud();},30000);
 try{draw();}catch(e){}
