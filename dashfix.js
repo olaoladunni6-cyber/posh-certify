@@ -17,6 +17,12 @@ function labelRole(r){
   if(r==="superadmin")return "Super Admin";
   return "Front Desk";
 }
+function siteQueries(){
+  return (db.salesQueries||[]).filter(function(q){
+    if(role()==="ceo"||role()==="superadmin")return true;
+    return !q.site||q.site===site();
+  });
+}
 function threadOf(q){
   if(q.thread&&q.thread.length)return q.thread;
   var t=[];
@@ -34,19 +40,51 @@ window.poshContinueQuery=function(q,text,who){
   q.lastBy=user&&user.name||"";
   q.loop=["accountant","manager","ceo","frontdesk"];
 };
+window.poshStartQuery=function(){
+  var open=siteQueries().filter(function(q){return (q.status||"open")!=="closed";});
+  if(open.length){
+    var more=prompt("Add to the open query (or type NEW)","");
+    if(more===null)return;
+    if(String(more).trim().toUpperCase()!=="NEW"){
+      window.poshContinueQuery(open[open.length-1],more,role());
+      try{save();}catch(e){}
+      try{draw();}catch(e){}
+      alert("Added. Publish so Front Desk, accountant, duty manager and CEO see it.");
+      return;
+    }
+  }
+  var from=prompt("From date YYYY-MM-DD",day());if(!from)return;
+  var to=prompt("To date YYYY-MM-DD",from);if(!to)return;
+  var note=prompt("Question for the loop (Front Desk, accountant, duty manager, CEO)","Please confirm room sales, extras and mini mart");
+  if(note===null)return;
+  db.salesQueries.push({id:"sq"+Date.now(),from:from,to:to,site:site(),by:user.name,byId:user.id,at:new Date().toLocaleString(),note:String(note).trim(),status:"open",loop:["accountant","manager","ceo","frontdesk"],thread:[{role:role(),by:user.name,at:new Date().toLocaleString(),text:String(note).trim()}],replies:[]});
+  try{save();}catch(e){}
+  try{draw();}catch(e){}
+  alert("Query opened for Accountant, Duty manager, CEO and Front Desk. Publish this phone.");
+};
+window.poshReplyQuery=function(){
+  var list=siteQueries();
+  if(!list.length){alert("No sales query yet");return;}
+  var q=list[list.length-1];
+  var text=prompt("Reply as "+labelRole(role())+". Type CLOSE to close.","");
+  if(text===null||!String(text).trim())return;
+  if(String(text).trim().toUpperCase()==="CLOSE"){q.status="closed";try{save();}catch(e){}try{draw();}catch(e){}alert("Query closed");return;}
+  window.poshContinueQuery(q,text,role());
+  try{save();}catch(e){}
+  try{draw();}catch(e){}
+  alert("Reply added. Publish so the others Refresh.");
+};
 function queryHtml(){
   if(!(isDesk()||isLead()))return "";
-  var list=(db.salesQueries||[]).filter(function(q){
-    if(role()==="ceo"||role()==="superadmin")return true;
-    return !q.site||q.site===site();
-  }).slice().reverse();
+  var list=siteQueries().slice().reverse();
   var body=list.length?list.map(function(q){
     var msgs=threadOf(q).map(function(m){return "<p><b>"+labelRole(m.role)+" · "+m.by+"</b><br>"+m.text+"<br><small>"+m.at+"</small></p>";}).join("");
     return "<div class=card><p><b>"+(q.from||"")+" to "+(q.to||"")+"</b> · "+(q.site||"")+" · "+(q.status||"open").toUpperCase()+"</p>"+
-      "<p>In the loop: Accountant, Duty manager, CEO, Front Desk</p>"+msgs+"</div>";
-  }).join(""):"<p>No sales query yet. Accountant, duty manager or CEO opens Query sales. Front Desk replies. All four stay on the same thread.</p>";
-  return "<div class=card id=dashQuery><h3>Sales query · Front Desk ↔ Accountant ↔ Duty manager ↔ CEO</h3>"+
-    "<p>Open Desk to read the thread. Use <b>Query sales</b> to start or add. Use <b>Reply to query</b> to answer. Then Publish so the others Refresh and see it.</p>"+body+"</div>";
+      "<p>Loop: Accountant · Duty manager · CEO · Front Desk</p>"+msgs+"</div>";
+  }).join(""):"<p>No sales query yet.</p>";
+  return "<div class=card id=dashQuery><h3>Sales query</h3>"+
+    "<p>Accountant, duty manager, CEO and Front Desk share one thread.</p>"+
+    "<p><button type=button class=btn id=dashDoQuery>Start / add to query</button> <button type=button class=btn id=dashDoReply>Reply</button></p>"+body+"</div>";
 }
 function roomsHere(){return (db.rooms||[]).filter(function(r){return !site()||!r.site||r.site===site()||role()==="ceo"||role()==="superadmin";});}
 function ticks(list,cls){
@@ -77,7 +115,7 @@ function martSalesHtml(){
     return !s.site||s.site===site();
   }).slice().reverse();
   var total=list.reduce(function(a,s){return a+Number(s.amount||0);},0);
-  var rows=list.map(function(s){return "<p>"+s.qty+" x "+s.name+" · NGN "+Number(s.amount||0).toLocaleString()+(s.room?(" · Rm "+s.room):"")+" · "+(s.by||"")+"</p>";}).join("");
+  var rows=list.map(function(s){return "<p>"+s.qty+" x "+s.name+" · NGN "+Number(s.amount||0).toLocaleString()+" · "+(s.by||"")+"</p>";}).join("");
   return "<div class=card id=dashMart><h3>Mini mart sales today</h3><p>Total <b>NGN "+total.toLocaleString()+"</b></p>"+(rows||"<p>No mini mart sale yet.</p>")+"</div>";
 }
 function statusHtml(){
@@ -105,20 +143,28 @@ function submittedChecks(){
     return !c.site||c.site===site();
   }).slice().reverse();
   return "<div class=card id=dashSentChecks><h3>Submitted checklists today</h3>"+(list.length?list.map(function(c){
-    return "<p><b>"+c.by+" · "+(c.kind==="close"?"Closing":"Opening")+"</b> · "+c.at+((c.items||[]).map(function(n){return "<br>✓ "+n;}).join(""))+"</p>";
+    return "<p><b>"+c.by+" · "+(c.kind==="close"?"Closing":"Opening")+"</b> · "+c.at+"</p>";
   }).join(""):"<p>None yet.</p>")+"</div>";
+}
+function bindQuery(){
+  var a=document.getElementById("dashDoQuery");
+  var b=document.getElementById("dashDoReply");
+  if(a)a.onclick=function(){window.poshStartQuery();};
+  if(b)b.onclick=function(){window.poshReplyQuery();};
 }
 function inject(){
   if(!user)return;
   stripCheckinMart();
-  if(document.getElementById("dashQuery"))return;
-  var wrap=document.querySelector(".wrap");
-  if(!wrap)return;
-  var html="";
-  if(isDesk()||isLead())html+=queryHtml()+statusHtml()+submittedChecks()+martSalesHtml();
-  if(isDesk())html+=checksHtml();
-  if(!html)return;
-  wrap.insertAdjacentHTML("afterbegin",html);
+  if(!document.getElementById("dashQuery")){
+    var wrap=document.querySelector(".wrap");
+    if(wrap){
+      var html="";
+      if(isDesk()||isLead())html+=queryHtml()+statusHtml()+submittedChecks()+martSalesHtml();
+      if(isDesk())html+=checksHtml();
+      if(html)wrap.insertAdjacentHTML("afterbegin",html);
+    }
+  }
+  bindQuery();
 }
 var _draw=draw;
 draw=function(){
