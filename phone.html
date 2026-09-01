@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 33K</title>
+<title>Posh Manager 33L</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui}
 #bar{padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512}
@@ -16,7 +16,7 @@ iframe.tall{top:200px;height:calc(100% - 200px)}
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 33K — loading…</span>
+  <span id=msg>POSH MANAGER 33L — loading…</span>
   <div id=acts>
     <button type=button id=barTok>Save token</button>
     <button type=button id=barPub>Publish</button>
@@ -44,7 +44,7 @@ iframe.tall{top:200px;height:calc(100% - 200px)}
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260901AK"+Date.now(),frame;
+var V="20260901AL"+Date.now(),frame;
 var ALL=["barTok","barPub","barPull","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
@@ -55,7 +55,6 @@ function num(w,id){var n=parseFloat(val(w,id)||"0");return isNaN(n)?0:n;}
 function openRoom(w){if(!w||!w.roomId||!w.db)return null;return w.db.rooms.filter(function(x){return x.id===w.roomId;})[0]||null;}
 function hkRoom(w){var r=openRoom(w);if(r)return r;return ((w&&w.db&&w.db.rooms||[]).filter(function(x){return w.user&&x.hk===w.user.id&&x.status!=="certified"&&x.status!=="ooo";})[0]||null);}
 function hidePageBtns(w){try{var st=w.document.getElementById("hidePageBtns");if(!st){st=w.document.createElement("style");st.id="hidePageBtns";w.document.head.appendChild(st);}st.textContent="#send,#sendL,#lrep,#cert,#rel,#ooo,#saveCin,#submitShift{display:none!important}";}catch(e){}}
-function nairaTxt(n){return "NGN "+Number(n||0).toLocaleString();}
 function paintBar(){
   var w=win(),fr=frame;ALL.forEach(function(id){show(id,false);});document.getElementById("vidWrap").className="";
   if(!w||!w.user){if(fr)fr.className="";return;}hidePageBtns(w);if(fr)fr.className="tall";
@@ -71,7 +70,29 @@ setInterval(paintBar,800);
 document.getElementById("barMartSell").onclick=function(){var w=win();if(w&&w.poshMartSell)w.poshMartSell();};
 document.getElementById("barMartIn").onclick=function(){var w=win();if(w&&w.poshMartReceive)w.poshMartReceive();};
 document.getElementById("barMartItem").onclick=function(){var w=win();if(w&&w.poshMartAddItem)w.poshMartAddItem();};
-document.getElementById("barQuery").onclick=function(){var w=win();if(!w)return;alert("Open Desk, review figures, then use Query sales after Refresh.");};
+document.getElementById("barQuery").onclick=function(){
+  var w=win();if(!w||!w.user)return;
+  var list=(w.db.salesQueries||[]).filter(function(q){return (!w.user.site||!q.site||q.site===w.user.site)&&(q.status||"open")!=="closed";});
+  if(list.length){
+    var more=prompt("Continue this dialogue, or type NEW", "");
+    if(more===null)return;
+    if(String(more).trim().toUpperCase()!=="NEW"){
+      if(w.poshContinueQuery)w.poshContinueQuery(list[list.length-1],more,"accountant");
+      try{w.save();}catch(e){}alert("Added to the same dialogue.");return;
+    }
+  }
+  var today=w.today?w.today():"";
+  var from=prompt("From date YYYY-MM-DD",today);if(!from)return;
+  var to=prompt("To date YYYY-MM-DD",from);if(!to)return;
+  var rooms=0,mart=0,extras=0,count=0;
+  (w.db.checkins||[]).forEach(function(c){if(c.day<from||c.day>to)return;if(w.user.role==="accountant"&&c.site&&c.site!==w.user.site)return;count++;rooms+=Number(c.amount||0);var e=c.extras||{};extras+=Number(e.early||0)+Number(e.late||0)+Number(e.laundry||0)+Number(e.other||0);});
+  (w.db.martSales||[]).forEach(function(s){if(s.day<from||s.day>to)return;if(w.user.role==="accountant"&&s.site&&s.site!==w.user.site)return;mart+=Number(s.amount||0);});
+  var note=prompt("Question for Front Desk?","Please confirm room, extras and mini mart");if(note===null)return;
+  if(!w.db.salesQueries)w.db.salesQueries=[];
+  w.db.salesQueries.push({id:"sq"+Date.now(),from:from,to:to,site:w.user.site,by:w.user.name,byId:w.user.id,at:new Date().toLocaleString(),rooms:rooms,mart:mart,extras:extras,billed:rooms+mart+extras,count:count,note:String(note).trim(),status:"open",thread:[{role:"accountant",by:w.user.name,at:new Date().toLocaleString(),text:String(note).trim()}],replies:[]});
+  try{w.save();}catch(e){}alert("Query opened. Front Desk Refresh then Reply.");
+};
+document.getElementById("barReply").onclick=function(){var w=win();if(!w||!w.db)return;var list=(w.db.salesQueries||[]).filter(function(q){return !w.user.site||!q.site||q.site===w.user.site;});if(!list.length){alert("No sales query yet");return;}var q=list[list.length-1];var text=prompt("Reply on this dialogue","");if(!text)return;if(w.poshContinueQuery)w.poshContinueQuery(q,text,w.user.role==="accountant"?"accountant":"frontdesk");try{w.save();}catch(e){}alert("Reply sent");};
 document.getElementById("barFix").onclick=function(){var w=win();if(!w)return;w.tab="issues";try{w.draw();}catch(e){};};
 document.getElementById("barTok").onclick=function(){var v=prompt("Paste GitHub token");if(!v)return;localStorage.setItem("posh-gh-token",v.trim());var w=win();if(w)try{w.localStorage.setItem("posh-gh-token",v.trim());}catch(e){}alert("Token saved");};
 document.getElementById("barPub").onclick=function(){var w=win();if(w&&w.publishHotel)w.publishHotel(function(ok,err){alert(ok?"Published":String(err||"fail"));});};
@@ -90,12 +111,11 @@ document.getElementById("barOpen").onclick=function(){var w=win();var items=w.po
 document.getElementById("barClose").onclick=function(){var w=win();var items=w.poshCollectClose?w.poshCollectClose():[];if(!items.length){alert("Tick the closing checklist on Desk first.");return;}if(!w.db.fdChecks)w.db.fdChecks=[];w.db.fdChecks.push({id:"fc"+Date.now(),day:w.today(),site:w.user.site,kind:"close",by:w.user.name,byId:w.user.id,items:items,note:w.poshCloseNote?w.poshCloseNote():"",at:new Date().toLocaleString(),seen:false,seenBy:""});try{w.save();}catch(e){}try{w.draw();}catch(e){}alert("Closing sent · "+items.length+" ticked");};
 document.getElementById("barAck").onclick=function(){var w=win();(w.db.fdChecks||[]).forEach(function(c){c.seen=true;c.seenBy=w.user.name;});try{w.save();}catch(e){}alert("Acknowledged");};
 document.getElementById("barMaint").onclick=function(){var w=win();if(!w||!w.user)return;var room=(openRoom(w)||{}).number||prompt("Room?");if(!room)return;var detail=prompt("Fault?");if(!detail)return;if(!w.db.issues)w.db.issues=[];w.db.issues.push({id:"is"+Date.now(),room:String(room),site:w.user.site,by:w.user.name,detail:String(detail).trim(),fault:String(detail).trim(),status:"received",day:w.today(),at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Sent to maintenance");};
-document.getElementById("barReply").onclick=function(){var w=win();if(!w||!w.db)return;var list=(w.db.salesQueries||[]).filter(function(q){return !w.user.site||!q.site||q.site===w.user.site;});if(!list.length){alert("No sales query yet");return;}var q=list[list.length-1];var text=prompt("Reply on this dialogue","");if(!text)return;if(w.poshContinueQuery)w.poshContinueQuery(q,text,w.user.role==="accountant"?"accountant":"frontdesk");try{w.save();}catch(e){}alert("Reply sent");};
 function start(){
   frame=document.createElement("iframe");frame.src="app.html?v="+V;
   frame.onload=function(){
     var w=win();
-    loadInto(w,"desk.js").then(function(){return loadInto(w,"minimart.js");}).then(function(){return loadInto(w,"salesq.js");}).then(function(){return loadInto(w,"acctquery.js");}).then(function(){return loadInto(w,"debtbox.js");}).then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"fdguard.js");}).then(function(){return loadInto(w,"hkfix.js");}).then(function(){return loadInto(w,"hknote.js");}).then(function(){return loadInto(w,"hkresub.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"wahotel.js");}).then(function(){return loadInto(w,"statuswa.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("33K READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("33K failed: "+err);});
+    loadInto(w,"desk.js").then(function(){return loadInto(w,"minimart.js");}).then(function(){return loadInto(w,"salesq.js");}).then(function(){return loadInto(w,"acctquery.js");}).then(function(){return loadInto(w,"debtbox.js");}).then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"fdguard.js");}).then(function(){return loadInto(w,"hkfix.js");}).then(function(){return loadInto(w,"hknote.js");}).then(function(){return loadInto(w,"hkresub.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"wahotel.js");}).then(function(){return loadInto(w,"statuswa.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("33L READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("33L failed: "+err);});
   };
   document.body.appendChild(frame);
 }
