@@ -17,23 +17,25 @@ function labelRole(r){
   if(r==="superadmin")return "Super Admin";
   return "Front Desk";
 }
+function lagosNow(){
+  try{return new Date(new Date().toLocaleString("en-US",{timeZone:"Africa/Lagos"}));}catch(e){return new Date();}
+}
 function guestOf(room){
   return (db.checkins||[]).filter(function(c){
-    return String(c.room)===String(room)&&!c.checkedOut&&(!c.site||!site()||c.site===site()||role()==="ceo");
+    return String(c.room)===String(room)&&!c.checkedOut;
   }).slice(-1)[0];
 }
 function noonFlip(){
-  var now=new Date();
-  if(now.getHours()<12)return;
-  var d=day();
+  var now=lagosNow(),d=day(),h=now.getHours();
   (db.checkins||[]).forEach(function(c){
-    if(c.checkedOut||c.extended)return;
-    if(!c.checkout||c.checkout!==d)return;
-    c.checkedOut=true;c.autoOut="12:00";
+    if(c.checkedOut||!c.checkout)return;
+    var due=c.checkout<d||(c.checkout===d&&h>=12);
+    if(!due)return;
+    c.checkedOut=true;c.autoOut="12:00 WAT";
     (db.rooms||[]).forEach(function(r){
       if(String(r.number)!==String(c.room))return;
       if(r.status==="ooo")return;
-      r.status="pending";r.job="checkout";r.hkNote="Vacated 12:00 — in service";
+      r.status="pending";r.job="checkout";r.hkNote="Vacated 12:00 — in service";r.guest="";
     });
   });
 }
@@ -91,8 +93,13 @@ window.poshExtendStay=function(room){
   var next=prompt("New checkout date YYYY-MM-DD",g.checkout||day());
   if(!next)return;
   g.checkout=String(next).trim();g.extended=true;g.checkedOut=false;
+  (db.rooms||[]).forEach(function(r){
+    if(String(r.number)!==String(room))return;
+    r.status="occupied";r.guest=g.guest;r.checkOut=g.checkout;r.job="";
+  });
   try{save();}catch(e){}
-  alert("Stay extended to "+g.checkout+". Room will not auto in-service at 12:00.");
+  try{draw();}catch(e){}
+  alert("Stay extended to "+g.checkout+". Room stays occupied. 12:00 in-service now uses the new date.");
 };
 function queryHtml(){
   if(!(isDesk()||isLead()))return "";
@@ -113,13 +120,13 @@ function statusHtml(){
     if(r.status==="ooo"){ooo.push(r);return;}
     if(g&&g.checkout===d){due.push({r:r,g:g});return;}
     if(g){occ.push({r:r,g:g});return;}
-    if(r.status==="pending"||r.status==="submitted"||r.job==="checkout"){svc.push(r);return;}
+    if(r.status==="pending"||r.status==="submitted"||r.status==="occupied"||r.job==="checkout"||r.job==="inservice"){svc.push(r);return;}
     ready.push(r);
   });
   function lines(arr,fn){return arr.length?arr.map(fn).join(""):"<p>None</p>";}
   return "<div id=dashStatus><h1>Room status · "+d+"</h1>"+
     "<div class=card><h3>OCCUPIED</h3>"+lines(occ,function(x){return "<p><b>Rm "+x.r.number+"</b> · "+x.g.guest+" · out "+x.g.checkout+(isDesk()?(" <button type=button data-ext='"+x.r.number+"'>Extend</button>"):"")+"</p>";})+"</div>"+
-    "<div class=card><h3>READY TO CHECK OUT today</h3><p>At 12:00 these become In service unless Front Desk extends.</p>"+lines(due,function(x){return "<p><b>Rm "+x.r.number+"</b> · "+x.g.guest+(isDesk()?(" <button type=button data-ext='"+x.r.number+"'>Extend</button>"):"")+"</p>";})+"</div>"+
+    "<div class=card><h3>READY TO CHECK OUT today</h3><p>At 12:00 Lagos these move to In service unless Front Desk extends.</p>"+lines(due,function(x){return "<p><b>Rm "+x.r.number+"</b> · "+x.g.guest+(isDesk()?(" <button type=button data-ext='"+x.r.number+"'>Extend</button>"):"")+"</p>";})+"</div>"+
     "<div class=card><h3>IN SERVICE</h3>"+lines(svc,function(r){return "<p><b>Rm "+r.number+"</b> · "+(r.status||"")+(r.hkNote?(" · "+r.hkNote):"")+"</p>";})+"</div>"+
     "<div class=card><h3>OUT OF ORDER</h3>"+lines(ooo,function(r){return "<p><b>Rm "+r.number+"</b></p>";})+"</div>"+
     "<div class=card><h3>VACANT / READY TO SELL</h3>"+lines(ready,function(r){return "<p><b>Rm "+r.number+"</b> · "+(r.status||"vacant")+"</p>";})+"</div></div>";
@@ -177,8 +184,8 @@ if(!window.__dashClicks){
   window.__dashClicks=true;
   document.addEventListener("click",function(ev){
     var t=ev.target;if(!t)return;
-    if(t.id==="dashDoQuery"){ev.preventDefault();ev.stopPropagation();window.poshStartQuery();return;}
-    if(t.id==="dashDoReply"){ev.preventDefault();ev.stopPropagation();window.poshReplyQuery();return;}
+    if(t.id==="dashDoQuery"){ev.preventDefault();window.poshStartQuery();return;}
+    if(t.id==="dashDoReply"){ev.preventDefault();window.poshReplyQuery();return;}
     var ext=t.getAttribute&&t.getAttribute("data-ext");
     if(ext){ev.preventDefault();window.poshExtendStay(ext);}
   },true);
