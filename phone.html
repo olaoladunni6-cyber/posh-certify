@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 33H</title>
+<title>Posh Manager 33I</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui}
 #bar{padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512}
@@ -11,18 +11,21 @@ html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui}
 #acts button{border:0;border-radius:999px;padding:10px 14px;background:#101512;color:#fff;font-weight:700;margin:0 6px 6px 0}
 #vidWrap{display:none;margin-top:6px}#vidWrap.on{display:block}
 iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:56px;height:calc(100% - 56px)}
-iframe.tall{top:168px;height:calc(100% - 168px)}
+iframe.tall{top:188px;height:calc(100% - 188px)}
 </style>
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 33H — loading…</span>
+  <span id=msg>POSH MANAGER 33I — loading…</span>
   <div id=acts>
     <button type=button id=barTok>Save token</button>
     <button type=button id=barPub>Publish</button>
     <button type=button id=barPull>Refresh</button>
     <button type=button id=barQuery>Query sales</button>
     <button type=button id=barReply>Reply to query</button>
+    <button type=button id=barMartSell>Sell mini mart</button>
+    <button type=button id=barMartIn>Receive mini mart</button>
+    <button type=button id=barMartItem>Add mart item</button>
     <button type=button id=barIn>Clock in</button>
     <button type=button id=barOpen>Submit opening</button>
     <button type=button id=barClose>Submit closing</button>
@@ -41,8 +44,8 @@ iframe.tall{top:168px;height:calc(100% - 168px)}
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260901AH"+Date.now(),frame;
-var ALL=["barTok","barPub","barPull","barQuery","barReply","barIn","barOpen","barClose","barFolio","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom"];
+var V="20260901AI"+Date.now(),frame;
+var ALL=["barTok","barPub","barPull","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
 function loadInto(w,src){return fetch(src+"?v="+V,{cache:"reload"}).then(function(r){if(!r.ok)throw new Error(src);return r.text();}).then(function(code){var s=w.document.createElement("script");s.text=code;w.document.body.appendChild(s);});}
@@ -64,22 +67,27 @@ function querySales(){
     if(from&&c.day<from)return;if(to&&c.day>to)return;
     if(w.user.role==="accountant"&&c.site&&c.site!==w.user.site)return;
     count++;rooms+=Number(c.amount||0);var e=c.extras||{};
-    mart+=Number(e.minimart||0);extras+=Number(e.early||0)+Number(e.late||0)+Number(e.laundry||0)+Number(e.other||0);debt+=Number(c.debt||0);
+    extras+=Number(e.early||0)+Number(e.late||0)+Number(e.laundry||0)+Number(e.other||0);debt+=Number(c.debt||0);
+  });
+  (w.db.martSales||[]).forEach(function(s){
+    if(from&&s.day<from)return;if(to&&s.day>to)return;
+    if(w.user.role==="accountant"&&s.site&&s.site!==w.user.site)return;
+    mart+=Number(s.amount||0);
   });
   var billed=rooms+mart+extras;
-  var note=prompt("Comment / question for Front Desk?","Please confirm extras and debt");
+  var note=prompt("Comment / question for Front Desk?","Please confirm room, extras and mini mart");
   if(note===null)return;
   if(!w.db.salesQueries)w.db.salesQueries=[];
   w.db.salesQueries.push({id:"sq"+Date.now(),from:from,to:to,site:w.user.site,by:w.user.name,byId:w.user.id,at:new Date().toLocaleString(),rooms:rooms,mart:mart,extras:extras,billed:billed,debt:debt,count:count,note:String(note).trim(),replies:[]});
   try{w.save();}catch(e){}
-  alert("SALES REPORT\n"+from+" to "+to+"\nRoom sales "+nairaTxt(rooms)+"\nMini mart "+nairaTxt(mart)+"\nExtras "+nairaTxt(extras)+"\nTotal billed "+nairaTxt(billed)+"\nNew debt "+nairaTxt(debt)+"\nFolios "+count+"\n\nSent to Front Desk:\n"+note);
+  alert("SALES REPORT\n"+from+" to "+to+"\nRoom sales "+nairaTxt(rooms)+"\nMini mart "+nairaTxt(mart)+"\nAncillary extras "+nairaTxt(extras)+"\nTotal billed "+nairaTxt(billed)+"\nNew debt "+nairaTxt(debt)+"\nFolios "+count+"\n\nSent to Front Desk:\n"+note);
 }
 function replyQuery(){
   var w=win();if(!w||!w.db)return;
   var list=(w.db.salesQueries||[]).filter(function(q){return !w.user.site||!q.site||q.site===w.user.site;});
   if(!list.length){alert("No sales query yet");return;}
   var last=list[list.length-1];
-  var text=prompt("Reply to "+last.by+" ("+last.from+" to "+last.to+")", "");
+  var text=prompt("Reply to "+last.by+" ("+last.from+" to "+last.to+")","");
   if(text===null||!String(text).trim())return;
   if(!last.replies)last.replies=[];
   last.replies.push({by:w.user.name,at:new Date().toLocaleString(),text:String(text).trim()});
@@ -90,19 +98,23 @@ function paintBar(){
   if(!w||!w.user){if(fr)fr.className="";return;}hidePageBtns(w);if(fr)fr.className="tall";
   var role=w.user.role,r=openRoom(w);
   if(role==="housekeeper"){show("barSaveCnt",true);show("barLaundry",true);show("barSendRoom",true);show("barFix",true);show("barMaint",true);show("barPub",true);document.getElementById("vidWrap").className="on";say("Housekeeper");return;}
-  if(role==="frontdesk"){show("barTok",true);show("barPub",true);show("barPull",true);show("barIn",true);show("barOpen",true);show("barClose",true);show("barFolio",true);show("barShift",true);show("barFix",true);show("barMaint",true);show("barReply",true);say("Front Desk");return;}
+  if(role==="frontdesk"){show("barTok",true);show("barPub",true);show("barPull",true);show("barIn",true);show("barOpen",true);show("barClose",true);show("barFolio",true);show("barMartSell",true);show("barMartIn",true);show("barMartItem",true);show("barShift",true);show("barFix",true);show("barMaint",true);show("barReply",true);say("Front Desk");return;}
   if(role==="manager"){show("barTok",true);show("barPub",true);show("barPull",true);show("barAck",true);show("barCert",true);show("barSvc",true);show("barOOO",true);show("barFix",true);show("barMaint",true);say(r?("Room "+r.number):"Open a room");return;}
-  if(role==="accountant"||role==="ceo"||role==="superadmin"){show("barTok",true);show("barPub",true);show("barPull",true);show("barQuery",true);show("barReply",true);say("Query sales");return;}
+  if(role==="accountant"||role==="ceo"){show("barTok",true);show("barPub",true);show("barPull",true);show("barQuery",true);show("barReply",true);say("Query sales");return;}
+  if(role==="superadmin"){show("barTok",true);show("barPub",true);show("barPull",true);show("barQuery",true);show("barMartIn",true);show("barMartItem",true);say("Super Admin");return;}
   show("barTok",true);show("barPub",true);show("barPull",true);say(w.user.name);
 }
 setInterval(paintBar,800);
+document.getElementById("barMartSell").onclick=function(){var w=win();if(w&&w.poshMartSell)w.poshMartSell();};
+document.getElementById("barMartIn").onclick=function(){var w=win();if(w&&w.poshMartReceive)w.poshMartReceive();};
+document.getElementById("barMartItem").onclick=function(){var w=win();if(w&&w.poshMartAddItem)w.poshMartAddItem();};
 document.getElementById("barQuery").onclick=querySales;
 document.getElementById("barReply").onclick=replyQuery;
 document.getElementById("barFix").onclick=function(){var w=win();if(!w)return;w.tab="issues";try{w.draw();}catch(e){};};
 document.getElementById("barTok").onclick=function(){var v=prompt("Paste GitHub token");if(!v)return;localStorage.setItem("posh-gh-token",v.trim());var w=win();if(w)try{w.localStorage.setItem("posh-gh-token",v.trim());}catch(e){}alert("Token saved");};
 document.getElementById("barPub").onclick=function(){var w=win();if(w&&w.publishHotel)w.publishHotel(function(ok,err){alert(ok?"Published":String(err||"fail"));});};
 document.getElementById("barPull").onclick=function(){var w=win();if(w&&w.refreshHotel)w.refreshHotel(function(ok){alert(ok?"Refreshed":"Could not refresh");});};
-document.getElementById("barFolio").onclick=function(){var w=win();if(!w||w.user.role!=="frontdesk")return;var name=val(w,"cinName"),room=val(w,"cinRoom");if(!name||!room){alert("Enter guest name and room");return;}if(!w.db.checkins)w.db.checkins=[];w.db.checkins.push({id:"c"+Date.now(),guest:name,room:room,amount:num(w,"cinAmt"),site:w.user.site,by:w.user.name,day:w.today(),at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Folio saved");};
+document.getElementById("barFolio").onclick=function(){var w=win();if(!w||w.user.role!=="frontdesk")return;var name=val(w,"cinName"),room=val(w,"cinRoom");if(!name||!room){alert("Enter guest name and room");return;}if(!w.db.checkins)w.db.checkins=[];w.db.checkins.push({id:"c"+Date.now(),guest:name,room:room,amount:num(w,"cinAmt"),extras:{early:num(w,"cinEarly"),earlyNote:val(w,"cinEarlyNote"),late:num(w,"cinLate"),lateNote:val(w,"cinLateNote"),laundry:num(w,"cinLau"),laundryNote:val(w,"cinLauNote"),other:num(w,"cinOth"),otherNote:val(w,"cinOthNote")},debt:num(w,"cinDebt"),debtNote:val(w,"cinDebtNote"),site:w.user.site,by:w.user.name,byId:w.user.id,day:w.today(),at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Room folio saved (mini mart is separate)");};
 document.getElementById("barShift").onclick=function(){var w=win();if(!w.db.shiftReports)w.db.shiftReports=[];w.db.shiftReports.push({id:"sh"+Date.now(),day:w.today(),site:w.user.site,by:w.user.name,at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Shift submitted");};
 document.getElementById("barCert").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}r.status="certified";r.hkNote="";if(w.pingRoomWa)w.pingRoomWa(r.number,"CERTIFIED. Ready to sell");try{w.save();}catch(e){}alert("Certified. WhatsApp sent.");};
 document.getElementById("barSvc").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}var note=prompt("What should the housekeeper do?","Spring clean");if(note===null)return;r.status="pending";r.hkNote=String(note).trim();if(w.pingRoomWa)w.pingRoomWa(r.number,"RETURNED TO SERVICE. "+r.hkNote);try{w.save();}catch(e){}alert("Returned to service. WhatsApp sent.");};
@@ -120,7 +132,7 @@ function start(){
   frame=document.createElement("iframe");frame.src="app.html?v="+V;
   frame.onload=function(){
     var w=win();
-    loadInto(w,"desk.js").then(function(){return loadInto(w,"salesq.js");}).then(function(){return loadInto(w,"acctquery.js");}).then(function(){return loadInto(w,"debtbox.js");}).then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"fdguard.js");}).then(function(){return loadInto(w,"hkfix.js");}).then(function(){return loadInto(w,"hknote.js");}).then(function(){return loadInto(w,"hkresub.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"wahotel.js");}).then(function(){return loadInto(w,"statuswa.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("33H READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("33H failed: "+err);});
+    loadInto(w,"desk.js").then(function(){return loadInto(w,"minimart.js");}).then(function(){return loadInto(w,"salesq.js");}).then(function(){return loadInto(w,"acctquery.js");}).then(function(){return loadInto(w,"debtbox.js");}).then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"fdguard.js");}).then(function(){return loadInto(w,"hkfix.js");}).then(function(){return loadInto(w,"hknote.js");}).then(function(){return loadInto(w,"hkresub.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"wahotel.js");}).then(function(){return loadInto(w,"statuswa.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("33I READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("33I failed: "+err);});
   };
   document.body.appendChild(frame);
 }
