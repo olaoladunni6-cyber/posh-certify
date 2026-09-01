@@ -5,7 +5,14 @@ if(window.__staffChat)return;window.__staffChat=true;
 if(!db.staffMsgs)db.staffMsgs=[];
 function role(){return (user&&user.role)||"";}
 function site(){return (user&&user.site)||"";}
-function seesAll(){return role()==="ceo"||role()==="gm"||role()==="superadmin";}
+function norm(r){return String(r||"").toLowerCase().replace(/\s+/g,"");}
+function seesAll(){
+  var r=norm(role());
+  if(r==="ceo"||r==="gm"||r==="generalmanager"||r==="owner"||r==="superadmin")return true;
+  try{if(typeof isGM==="function"&&isGM())return true;}catch(e){}
+  try{if(typeof isCEO==="function"&&isCEO())return true;}catch(e){}
+  return false;
+}
 function labelRole(r){
   return ({housekeeper:"Housekeeper",frontdesk:"Front Desk",manager:"Duty manager",ceo:"CEO",gm:"CEO",accountant:"Accountant",superadmin:"Super Admin",kitchen:"Kitchen",laundry:"Laundry",storekeeper:"Store",maintenance:"Maintenance"})[r]||r||"Staff";
 }
@@ -175,15 +182,16 @@ window.poshChatPrompt=function(){
 function box(){
   if(!user)return "";
   var unread=roots().filter(isUnread).length;
+  var audit=seesAll();
   var opts=people().map(function(u){return "<option value='"+u.id+"'>"+u.name+" · "+labelRole(u.role)+"</option>";}).join("");
-  var cards=roots().slice(0,20).map(function(m){
-    var where=m.channel==="dm"?("To "+(m.toName||"staff")):m.channel==="hotel"?"Hotel":(m.site||"Location");
+  var cards=roots().slice(0,audit?80:20).map(function(m){
+    var where=m.channel==="dm"?("Private · "+m.by+" → "+(m.toName||"staff")+(audit?" · CEO audit":"")):m.channel==="hotel"?"Hotel":(m.site||"Location");
     var thread=(m.replies||[]).filter(function(r){return canSeeReply(m,r);}).map(function(r){
       return "<p style='margin-left:12px'><b>"+r.by+"</b> · "+(r.mode==="person"?"private":"all")+"<br>"+r.text+"</p>"+mediaHtml(r)+"<p style='margin-left:12px'><small>"+r.at+"</small></p>";
     }).join("");
     return "<div class=card><p><b>"+m.by+"</b> · "+where+(isUnread(m)?" <b>UNREAD</b>":"")+"<br>"+m.text+"</p>"+mediaHtml(m)+"<p><small>"+m.at+"</small></p>"+thread+"<p>"+receiptLine(m)+"</p><p><button type=button class=chatPerson data-id='"+m.id+"'>Reply to person</button> <button type=button class=chatAll data-id='"+m.id+"'>Reply to all</button></p></div>";
   }).join("");
-  return "<div class=card id=staffChat><h3>Staff dialogue</h3><p>"+(unread?("<b>"+unread+" unread</b>"):"No unread loops")+". Any role can attach a photo, video or file.</p>"+
+  return "<div class=card id=staffChat><h3>Staff dialogue</h3><p>"+(audit?"CEO / Super Admin audit is on. You see every private chat and every reply-to-person, all locations.":(unread?("<b>"+unread+" unread</b>"):"No unread loops"))+". Any role can attach a photo, video or file.</p>"+
     "<p>Start with</p><select id=chatTo><option value='site'>This location</option><option value='hotel'>Whole hotel</option>"+opts+"</select>"+
     "<textarea id=chatText placeholder='Write a message'></textarea>"+
     "<p><input id=chatFile type=file accept='image/*,video/*,.pdf,.doc,.docx' capture='environment'></p>"+
