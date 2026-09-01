@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 34B</title>
+<title>Posh Manager 34C</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui;overflow:hidden}
 #bar{position:relative;z-index:50;padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512;pointer-events:auto}
@@ -15,11 +15,12 @@ iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:120px;heig
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 34B — loading…</span>
+  <span id=msg>POSH MANAGER 34C — loading…</span>
   <div id=acts>
     <button type=button id=barTok>Save token</button>
     <button type=button id=barPub>Publish</button>
     <button type=button id=barPull>Refresh</button>
+    <button type=button id=barAlert>Allow phone alerts</button>
     <button type=button id=barChat>Staff chat</button>
     <button type=button id=barQuery>Query sales</button>
     <button type=button id=barReply>Reply to query</button>
@@ -45,9 +46,9 @@ iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:120px;heig
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260901BB"+Date.now(),frame,log=[];
-var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js","dashfix.js","chat.js"];
-var ALL=["barTok","barPub","barPull","barChat","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barExtend","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom"];
+var V="20260901BF"+Date.now(),frame,log=[];
+var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js","dashfix.js","chat.js","alerts.js"];
+var ALL=["barTok","barPub","barPull","barAlert","barChat","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barExtend","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
 function fitFrame(){
@@ -84,12 +85,25 @@ function callMart(fn,label){
   if(typeof w[fn]!=="function"){alert(label+" missing.\n"+log.join("\n"));return;}
   try{w[fn]();}catch(e){alert(label+" crashed: "+e);}
 }
+function askAlerts(){
+  function go(ctx,label){
+    if(!ctx||!ctx.Notification)return;
+    ctx.Notification.requestPermission().then(function(p){
+      if(p==="granted"){
+        try{new ctx.Notification("Posh Manager",{body:"Phone alerts are on.",tag:"posh-alert-on");}catch(e){}
+      }
+      alert((label||"Alerts")+": "+p);
+    });
+  }
+  go(window,"This phone");
+  var w=win();if(w&&w.poshAllowAlerts)w.poshAllowAlerts();else if(w)go(w,"App");
+}
 function paintBar(){
   var w=win();ALL.forEach(function(id){show(id,false);});document.getElementById("vidWrap").className="";
   if(!w||!w.user){fitFrame();return;}
   hidePageBtns(w);
   var role=w.user.role,r=openRoom(w);
-  show("barTok",true);show("barPub",true);show("barPull",true);show("barChat",true);
+  show("barTok",true);show("barPub",true);show("barPull",true);show("barAlert",true);show("barChat",true);
   if(role==="housekeeper"){show("barSaveCnt",true);show("barLaundry",true);show("barSendRoom",true);show("barFix",true);show("barMaint",true);document.getElementById("vidWrap").className="on";say("Housekeeper");}
   else if(role==="frontdesk"){show("barIn",true);show("barOpen",true);show("barClose",true);show("barFolio",true);show("barExtend",true);show("barMartSell",true);show("barMartIn",true);show("barMartItem",true);show("barShift",true);show("barFix",true);show("barMaint",true);show("barReply",true);say("Front Desk");}
   else if(role==="manager"){show("barAck",true);show("barCert",true);show("barSvc",true);show("barOOO",true);show("barFix",true);show("barMaint",true);show("barQuery",true);show("barReply",true);say(r?("Room "+r.number):"Open a room or Desk");}
@@ -100,6 +114,7 @@ function paintBar(){
 }
 setInterval(paintBar,800);
 window.addEventListener("resize",fitFrame);
+document.getElementById("barAlert").onclick=askAlerts;
 document.getElementById("barChat").onclick=function(){var w=win();if(w&&w.poshChatPrompt)w.poshChatPrompt();else alert("Sign in first");};
 document.getElementById("barMartSell").onclick=function(){callMart("poshMartSell","Sell mini mart");};
 document.getElementById("barMartIn").onclick=function(){callMart("poshMartReceive","Receive mini mart");};
@@ -153,8 +168,7 @@ function start(){
     FILES.forEach(function(src){chain=chain.then(function(){return loadInto(w,src);});});
     chain.then(function(){
       var bad=log.filter(function(x){return x.indexOf(":ok")<0;});
-      var chat=typeof w.poshSendChat==="function"?"chat:yes":"chat:NO";
-      say((bad.length?("34B ERRORS\n"+bad.join("\n")):"34B READY")+" · "+chat);
+      say((bad.length?("34C ERRORS\n"+bad.join("\n")):"34C READY")+" · alerts on bar");
       try{w.draw();}catch(e){say("draw crashed: "+e);}
       paintBar();fitFrame();
     });
