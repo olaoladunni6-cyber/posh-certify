@@ -14,20 +14,47 @@ function unionById(a,b){
   (a||[]).concat(b||[]).forEach(function(x){if(x&&x.id)m[x.id]=x;});
   return Object.keys(m).map(function(k){return m[k];});
 }
+function stripChatMedia(m){
+  if(!m)return;
+  if(m.mediaKind==="video" || (m.mediaData&&String(m.mediaData).length>140000)){
+    m.mediaData="";
+    m.mediaReady=true;
+  }
+  (m.replies||[]).forEach(function(r){
+    if(r.mediaKind==="video" || (r.mediaData&&String(r.mediaData).length>140000)){
+      r.mediaData="";
+      r.mediaReady=true;
+    }
+  });
+}
 function slim(src){
   var x=JSON.parse(JSON.stringify(src||db));
   (x.rooms||[]).forEach(function(r){
     var has=!!(r.video||(r.photos&&r.photos.Walkthrough)||r.videoReady);
     r.photos={};r.video="";r.videoReady=has;
   });
+  (x.staffMsgs||[]).forEach(stripChatMedia);
   return x;
 }
 function stampOf(x){
   return String((x&&x.updated)||"")+"|c"+(x&&x.checkins?x.checkins.length:0)+"|m"+(x&&x.martSales?x.martSales.length:0)+"|ch"+(x&&x.staffMsgs?x.staffMsgs.length:0);
 }
+function keepMedia(local,remote){
+  if(!local||!remote)return;
+  if(local.mediaData&&!remote.mediaData){
+    remote.mediaData=local.mediaData;remote.mediaKind=local.mediaKind;remote.mediaName=local.mediaName;remote.mediaReady=true;
+  }
+  var map={};
+  (local.replies||[]).forEach(function(r){map[r.id]=r;});
+  (remote.replies||[]).forEach(function(r){
+    var loc=map[r.id];
+    if(loc&&loc.mediaData&&!r.mediaData){r.mediaData=loc.mediaData;r.mediaKind=loc.mediaKind;r.mediaName=loc.mediaName;r.mediaReady=true;}
+  });
+}
 function applyRemote(x){
   if(!x||!x.users||!x.users.length)return false;
   var keepRooms=db.rooms||[];
+  var keepMsgs=db.staffMsgs||[];
   var keep={checkins:db.checkins,clocks:db.clocks,fdChecks:db.fdChecks,debts:db.debts,shiftReports:db.shiftReports,slips:db.slips,deskNotes:db.deskNotes,issues:db.issues,salesQueries:db.salesQueries,martSales:db.martSales,martMoves:db.martMoves,martStock:db.martStock,martItems:db.martItems,staffMsgs:db.staffMsgs};
   db=x;
   db.checkins=unionById(x.checkins,keep.checkins);
@@ -44,6 +71,8 @@ function applyRemote(x){
   db.martStock=unionById(x.martStock,keep.martStock);
   db.martItems=unionById(x.martItems,keep.martItems);
   db.staffMsgs=unionById(x.staffMsgs,keep.staffMsgs);
+  var mmap={};keepMsgs.forEach(function(m){mmap[m.id]=m;});
+  (db.staffMsgs||[]).forEach(function(m){keepMedia(mmap[m.id],m);});
   var map={};
   keepRooms.forEach(function(r){map[r.id]=r;});
   (db.rooms||[]).forEach(function(r){
