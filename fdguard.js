@@ -5,26 +5,29 @@ if(window.__fdGuard)return;window.__fdGuard=true;
 if(!db.deskNotes)db.deskNotes=[];
 function roomsHere(){return (typeof siteRooms==="function"?siteRooms():db.rooms||[]).filter(function(r){return !r.site||siteMatch(r.site);});}
 function certifiedRooms(){return roomsHere().filter(function(r){return r.status==="certified";});}
+function dayNow(){return typeof today==="function"?today():"";}
 function list(title,arr,empty){
   if(!arr.length)return "<div class=card><h3>"+title+"</h3><p>"+empty+"</p></div>";
   return "<div class=card><h3>"+title+"</h3>"+arr.map(function(r){
-    return "<p><b>Rm "+r.number+"</b> · "+(r.status||"")+(r.hkNote?(" · "+r.hkNote):"")+"</p>";
+    var log=(r.statusLog||[]).filter(function(x){return !x.day||x.day===dayNow();}).map(function(x){return x.at+" · "+x.kind;}).join("<br>");
+    return "<p><b>Rm "+r.number+"</b> · "+(r.status||"").toUpperCase()+(r.hkNote?(" · "+r.hkNote):"")+(log?("<br><small>"+log+"</small>"):"")+"</p>";
   }).join("")+"</div>";
 }
 function noteBox(){
-  if(!(isFD()||(typeof mgr==="function"&&mgr())||(typeof isGM==="function"&&isGM())))return "";
+  if(!(isFD()||(typeof isAcct==="function"&&isAcct())||(typeof mgr==="function"&&mgr())||(typeof isGM==="function"&&isGM())||(typeof isSuper==="function"&&isSuper())))return "";
   var all=roomsHere();
   var ooo=all.filter(function(r){return r.status==="ooo";});
-  var back=all.filter(function(r){return r.status==="pending"||r.hkNote;});
+  var back=all.filter(function(r){return r.status==="pending"||(r.hkNote&&r.status!=="certified"&&r.status!=="ooo");});
   var wait=all.filter(function(r){return r.status==="submitted";});
   var ok=certifiedRooms();
-  var notes=(db.deskNotes||[]).filter(function(n){return siteMatch(n.site);}).slice(-6).reverse();
-  return "<h1>Front desk room board</h1>"+
+  var notes=(db.deskNotes||[]).filter(function(n){return siteMatch(n.site)&&(!n.day||n.day===dayNow());}).slice().reverse();
+  return "<h1>Room status · all shifts · "+dayNow()+"</h1>"+
+    "<div class=ok>Certified, returned-to-service and OOO stay on this board for the whole day so both Front Desk shifts see the same rooms.</div>"+
+    list("CERTIFIED — ready to sell",ok,"No certified room yet")+
+    list("RETURNED TO SERVICE — waiting recertify",back,"None waiting")+
     list("OUT OF ORDER — do not sell",ooo,"No OOO rooms")+
-    list("Returned to service — waiting recertify",back,"None waiting")+
-    list("Submitted — duty manager to certify",wait,"None submitted")+
-    list("Certified — ready to sell",ok,"No certified room yet")+
-    (notes.length?("<div class=card><h3>Latest alerts</h3>"+notes.map(function(n){return "<p><b>"+n.room+"</b> · "+n.kind+" · "+n.at+"</p>";}).join("")+"</div>"):"");
+    list("SUBMITTED — duty manager to certify",wait,"None submitted")+
+    (notes.length?("<div class=card><h3>Status changes today</h3>"+notes.map(function(n){return "<p><b>Rm "+n.room+"</b> · "+n.kind+" · "+n.at+(n.by?(" · "+n.by):"")+"</p>";}).join("")+"</div>"):"");
 }
 function restrictSelect(){
   var sel=document.getElementById("cinRoom");
@@ -52,7 +55,12 @@ bind=function(){
 };
 window.poshDeskNote=function(room,kind){
   if(!db.deskNotes)db.deskNotes=[];
-  db.deskNotes.push({id:"n"+Date.now(),room:room,kind:kind,site:user&&user.site||"",at:new Date().toLocaleString()});
+  var r=(db.rooms||[]).filter(function(x){return String(x.number)===String(room)&&(!user||!x.site||x.site===user.site);})[0];
+  if(r){
+    if(!r.statusLog)r.statusLog=[];
+    r.statusLog.push({kind:kind,at:new Date().toLocaleString(),day:dayNow(),by:user&&user.name||""});
+  }
+  db.deskNotes.push({id:"n"+Date.now(),room:room,kind:kind,site:user&&user.site||"",by:user&&user.name||"",day:dayNow(),at:new Date().toLocaleString()});
 };
 try{draw();}catch(e){}
 }
