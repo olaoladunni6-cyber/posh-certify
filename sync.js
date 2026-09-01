@@ -23,12 +23,12 @@ function slim(src){
   return x;
 }
 function stampOf(x){
-  return String((x&&x.updated)||"")+"|c"+(x&&x.checkins?x.checkins.length:0)+"|r"+(x&&x.rooms?x.rooms.length:0)+"|o"+(x&&x.rooms?x.rooms.filter(function(r){return r.status==="ooo";}).length:0);
+  return String((x&&x.updated)||"")+"|c"+(x&&x.checkins?x.checkins.length:0)+"|q"+(x&&x.salesQueries?x.salesQueries.length:0);
 }
 function applyRemote(x){
   if(!x||!x.users||!x.users.length)return false;
   var keepRooms=db.rooms||[];
-  var keep={checkins:db.checkins,clocks:db.clocks,fdChecks:db.fdChecks,debts:db.debts,shiftReports:db.shiftReports,slips:db.slips,deskNotes:db.deskNotes,issues:db.issues};
+  var keep={checkins:db.checkins,clocks:db.clocks,fdChecks:db.fdChecks,debts:db.debts,shiftReports:db.shiftReports,slips:db.slips,deskNotes:db.deskNotes,issues:db.issues,salesQueries:db.salesQueries};
   db=x;
   db.checkins=unionById(x.checkins,keep.checkins);
   db.clocks=unionById(x.clocks,keep.clocks);
@@ -38,6 +38,7 @@ function applyRemote(x){
   db.slips=unionById(x.slips,keep.slips);
   db.deskNotes=unionById(x.deskNotes,keep.deskNotes);
   db.issues=unionById(x.issues,keep.issues);
+  db.salesQueries=unionById(x.salesQueries,keep.salesQueries);
   var map={};
   keepRooms.forEach(function(r){map[r.id]=r;});
   (db.rooms||[]).forEach(function(r){
@@ -132,7 +133,7 @@ function hookCloud(){
 var _vsC=viewStaff;
 viewStaff=function(){
   var html=_vsC();
-  if(user&&(user.role==="superadmin"||user.role==="frontdesk"||user.role==="manager"||user.role==="ceo"))return cloudBox()+html;
+  if(user&&(user.role==="superadmin"||user.role==="frontdesk"||user.role==="manager"||user.role==="ceo"||user.role==="accountant"))return cloudBox()+html;
   return html;
 };
 var _bC=bind;bind=function(){_bC();hookCloud();};
