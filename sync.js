@@ -23,12 +23,12 @@ function slim(src){
   return x;
 }
 function stampOf(x){
-  return String((x&&x.updated)||"")+"|c"+(x&&x.checkins?x.checkins.length:0)+"|q"+(x&&x.salesQueries?x.salesQueries.length:0);
+  return String((x&&x.updated)||"")+"|c"+(x&&x.checkins?x.checkins.length:0)+"|m"+(x&&x.martSales?x.martSales.length:0);
 }
 function applyRemote(x){
   if(!x||!x.users||!x.users.length)return false;
   var keepRooms=db.rooms||[];
-  var keep={checkins:db.checkins,clocks:db.clocks,fdChecks:db.fdChecks,debts:db.debts,shiftReports:db.shiftReports,slips:db.slips,deskNotes:db.deskNotes,issues:db.issues,salesQueries:db.salesQueries};
+  var keep={checkins:db.checkins,clocks:db.clocks,fdChecks:db.fdChecks,debts:db.debts,shiftReports:db.shiftReports,slips:db.slips,deskNotes:db.deskNotes,issues:db.issues,salesQueries:db.salesQueries,martSales:db.martSales,martMoves:db.martMoves,martStock:db.martStock,martItems:db.martItems};
   db=x;
   db.checkins=unionById(x.checkins,keep.checkins);
   db.clocks=unionById(x.clocks,keep.clocks);
@@ -39,6 +39,10 @@ function applyRemote(x){
   db.deskNotes=unionById(x.deskNotes,keep.deskNotes);
   db.issues=unionById(x.issues,keep.issues);
   db.salesQueries=unionById(x.salesQueries,keep.salesQueries);
+  db.martSales=unionById(x.martSales,keep.martSales);
+  db.martMoves=unionById(x.martMoves,keep.martMoves);
+  db.martStock=unionById(x.martStock,keep.martStock);
+  db.martItems=unionById(x.martItems,keep.martItems);
   var map={};
   keepRooms.forEach(function(r){map[r.id]=r;});
   (db.rooms||[]).forEach(function(r){
