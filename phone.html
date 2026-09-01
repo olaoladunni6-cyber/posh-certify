@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 33F</title>
+<title>Posh Manager 33G</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui}
 #bar{padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512}
@@ -16,7 +16,7 @@ iframe.tall{top:168px;height:calc(100% - 168px)}
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 33F — loading…</span>
+  <span id=msg>POSH MANAGER 33G — loading…</span>
   <div id=acts>
     <button type=button id=barTok>Save token</button>
     <button type=button id=barPub>Publish</button>
@@ -40,7 +40,7 @@ iframe.tall{top:168px;height:calc(100% - 168px)}
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260901AF"+Date.now(),frame;
+var V="20260901AG"+Date.now(),frame;
 var ALL=["barTok","barPub","barPull","barQuery","barIn","barOpen","barClose","barFolio","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
@@ -65,11 +65,7 @@ function querySales(){
     count++;rooms+=Number(c.amount||0);var e=c.extras||{};
     mart+=Number(e.minimart||0);extras+=Number(e.early||0)+Number(e.late||0)+Number(e.laundry||0)+Number(e.other||0);debt+=Number(c.debt||0);
   });
-  (w.db.debts||[]).forEach(function(d){
-    if(w.user.role==="accountant"&&d.site&&d.site!==w.user.site)return;
-    (d.payments||[]).forEach(function(p){if((!from||p.day>=from)&&(!to||p.day<=to))paid+=Number(p.amount||0);});
-  });
-  alert("SALES REPORT\n"+from+" to "+to+"\n\nRoom sales  "+nairaTxt(rooms)+"\nMini mart  "+nairaTxt(mart)+"\nExtras  "+nairaTxt(extras)+"\nTotal billed  "+nairaTxt(rooms+mart+extras)+"\nNew debt  "+nairaTxt(debt)+"\nDebt paid  "+nairaTxt(paid)+"\nFolios  "+count);
+  alert("SALES REPORT\n"+from+" to "+to+"\nRoom sales "+nairaTxt(rooms)+"\nMini mart "+nairaTxt(mart)+"\nExtras "+nairaTxt(extras)+"\nTotal billed "+nairaTxt(rooms+mart+extras)+"\nNew debt "+nairaTxt(debt)+"\nFolios "+count);
 }
 function paintBar(){
   var w=win(),fr=frame;ALL.forEach(function(id){show(id,false);});document.getElementById("vidWrap").className="";
@@ -84,28 +80,43 @@ function paintBar(){
 setInterval(paintBar,800);
 document.getElementById("barQuery").onclick=querySales;
 document.getElementById("barFix").onclick=function(){var w=win();if(!w)return;w.tab="issues";try{w.draw();}catch(e){};};
-document.getElementById("barMaint").onclick=function(){var w=win();if(!w||!w.user)return;var r=openRoom(w);var room=r?r.number:prompt("Room number?");if(!room)return;var detail=prompt("What should maintenance do?");if(!detail)return;if(!w.db.issues)w.db.issues=[];w.db.issues.push({id:"is"+Date.now(),room:String(room),site:w.user.site,by:w.user.name,detail:String(detail).trim(),fault:String(detail).trim(),status:"received",day:w.today(),at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Sent to maintenance");};
 document.getElementById("barTok").onclick=function(){var v=prompt("Paste GitHub token");if(!v)return;localStorage.setItem("posh-gh-token",v.trim());var w=win();if(w)try{w.localStorage.setItem("posh-gh-token",v.trim());}catch(e){}alert("Token saved");};
 document.getElementById("barPub").onclick=function(){var w=win();if(w&&w.publishHotel)w.publishHotel(function(ok,err){alert(ok?"Published":String(err||"fail"));});};
 document.getElementById("barPull").onclick=function(){var w=win();if(w&&w.refreshHotel)w.refreshHotel(function(ok){alert(ok?"Refreshed":"Could not refresh");});};
 document.getElementById("barFolio").onclick=function(){var w=win();if(!w||w.user.role!=="frontdesk")return;var name=val(w,"cinName"),room=val(w,"cinRoom");if(!name||!room){alert("Enter guest name and room");return;}if(!w.db.checkins)w.db.checkins=[];w.db.checkins.push({id:"c"+Date.now(),guest:name,room:room,amount:num(w,"cinAmt"),site:w.user.site,by:w.user.name,day:w.today(),at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Folio saved");};
 document.getElementById("barShift").onclick=function(){var w=win();if(!w.db.shiftReports)w.db.shiftReports=[];w.db.shiftReports.push({id:"sh"+Date.now(),day:w.today(),site:w.user.site,by:w.user.name,at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Shift submitted");};
 document.getElementById("barCert").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}r.status="certified";r.hkNote="";if(w.pingRoomWa)w.pingRoomWa(r.number,"CERTIFIED. Ready to sell");try{w.save();}catch(e){}alert("Certified. WhatsApp sent.");};
-document.getElementById("barSvc").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}var note=prompt("What should the housekeeper do on Room "+r.number+"?","Spring clean and recertify");if(note===null)return;r.status="pending";r.hkNote=String(note).trim();if(w.pingRoomWa)w.pingRoomWa(r.number,"RETURNED TO SERVICE. "+r.hkNote);try{w.save();}catch(e){}alert("Returned to service. WhatsApp sent.");};
+document.getElementById("barSvc").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}var note=prompt("What should the housekeeper do?","Spring clean");if(note===null)return;r.status="pending";r.hkNote=String(note).trim();if(w.pingRoomWa)w.pingRoomWa(r.number,"RETURNED TO SERVICE. "+r.hkNote);try{w.save();}catch(e){}alert("Returned to service. WhatsApp sent.");};
 document.getElementById("barOOO").onclick=function(){var w=win(),r=openRoom(w);if(!r)return;r.status="ooo";if(w.pingRoomWa)w.pingRoomWa(r.number,"OUT OF ORDER. Do not sell");try{w.save();}catch(e){}alert("OOO. WhatsApp sent.");};
 document.getElementById("barVid").onchange=function(){var w=win(),f=this.files&&this.files[0],r=hkRoom(w);if(!r||!f){alert("Open YOUR allocated room first");return;}r.videoReady=true;try{w.save();}catch(e){};};
-document.getElementById("barSaveCnt").onclick=function(){var r=hkRoom(win());if(!r)return;r.laundryChecked=true;try{win().save();}catch(e){}alert("Counts saved");};
-document.getElementById("barLaundry").onclick=function(){var w=win(),r=hkRoom(w);if(!r)return;if(!w.db.slips)w.db.slips=[];var n=parseInt(prompt("Dirty bags?","1"),10);if(!(n>0))return;w.db.slips.push({id:"s"+Date.now(),room:r.number,site:r.site,by:w.user.name,at:new Date().toLocaleString(),items:{dirty_bag:n},status:"sent",summary:n+" bags"});try{w.save();}catch(e){}alert("Sent to laundry");};
+document.getElementById("barSaveCnt").onclick=function(){var w=win(),r=hkRoom(w);if(!r)return;if(!r.missing)r.missing={};try{w.document.querySelectorAll(".q").forEach(function(inp){var n=parseInt(inp.value,10);if(n>0)r.missing[inp.getAttribute("data-item")]=n;});}catch(e){}r.laundryChecked=true;try{w.save();}catch(e){}alert("Counts saved");};
+document.getElementById("barLaundry").onclick=function(){
+  var w=win(),r=hkRoom(w);if(!r){alert("Open the allocated room first");return;}
+  var items={};
+  try{w.document.querySelectorAll(".sq").forEach(function(inp){var n=parseInt(inp.value,10);if(n>0)items[inp.getAttribute("data-item")]=n;});}catch(e){}
+  if(!Object.keys(items).length && w.linenItems){
+    (w.linenItems()||[]).forEach(function(it){
+      var n=parseInt(prompt(it.name+" sent to laundry?","0"),10);
+      if(n>0)items[it.id]=n;
+    });
+  }
+  if(!Object.keys(items).length){alert("Type quantities on Send to laundry for this room, then tap Send to laundry.");return;}
+  if(!w.db.slips)w.db.slips=[];
+  var summary=Object.keys(items).map(function(k){return items[k]+" x "+(w.itemName?w.itemName(k):k);}).join(", ");
+  w.db.slips.push({id:"s"+Date.now(),room:r.number,site:r.site,by:w.user.name,at:new Date().toLocaleString(),items:items,status:"sent",summary:summary});
+  try{w.save();}catch(e){}alert("Sent to laundry\n"+summary);
+};
 document.getElementById("barSendRoom").onclick=function(){var w=win(),r=hkRoom(w);if(!r){alert("Open YOUR allocated room first");return;}if(!r.videoReady){alert("Attach a new video first");return;}var fix=prompt("What correction did you make?",r.hkNote||"Corrected");if(fix===null)return;r.hkFix=String(fix).trim();r.status="submitted";try{w.save();}catch(e){}alert("Submitted");};
 document.getElementById("barIn").onclick=function(){var w=win();if(!w.db.clocks)w.db.clocks=[];w.db.clocks.push({id:"ck"+Date.now(),day:w.today(),site:w.user.site,by:w.user.name,byId:w.user.id,inAt:new Date().toLocaleTimeString(),outAt:""});try{w.save();}catch(e){}alert("Clocked in");};
 document.getElementById("barOpen").onclick=function(){var w=win();if(!w.db.fdChecks)w.db.fdChecks=[];w.db.fdChecks.push({id:"fc"+Date.now(),day:w.today(),site:w.user.site,kind:"open",by:w.user.name,byId:w.user.id,items:[],at:new Date().toLocaleString(),seen:false,seenBy:""});try{w.save();}catch(e){}alert("Opening sent");};
 document.getElementById("barClose").onclick=function(){var w=win();if(!w.db.fdChecks)w.db.fdChecks=[];w.db.fdChecks.push({id:"fc"+Date.now(),day:w.today(),site:w.user.site,kind:"close",by:w.user.name,byId:w.user.id,items:[],at:new Date().toLocaleString(),seen:false,seenBy:""});try{w.save();}catch(e){}alert("Closing sent");};
 document.getElementById("barAck").onclick=function(){var w=win();(w.db.fdChecks||[]).forEach(function(c){c.seen=true;c.seenBy=w.user.name;});try{w.save();}catch(e){}alert("Acknowledged");};
+document.getElementById("barMaint").onclick=function(){var w=win();if(!w||!w.user)return;var r=openRoom(w);var room=r?r.number:prompt("Room number?");if(!room)return;var detail=prompt("What should maintenance do?");if(!detail)return;if(!w.db.issues)w.db.issues=[];w.db.issues.push({id:"is"+Date.now(),room:String(room),site:w.user.site,by:w.user.name,detail:String(detail).trim(),fault:String(detail).trim(),status:"received",day:w.today(),at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Sent to maintenance");};
 function start(){
   frame=document.createElement("iframe");frame.src="app.html?v="+V;
   frame.onload=function(){
     var w=win();
-    loadInto(w,"desk.js").then(function(){return loadInto(w,"acctquery.js");}).then(function(){return loadInto(w,"debtbox.js");}).then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"fdguard.js");}).then(function(){return loadInto(w,"hkfix.js");}).then(function(){return loadInto(w,"hknote.js");}).then(function(){return loadInto(w,"hkresub.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"wahotel.js");}).then(function(){return loadInto(w,"statuswa.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("33F READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("33F failed: "+err);});
+    loadInto(w,"desk.js").then(function(){return loadInto(w,"acctquery.js");}).then(function(){return loadInto(w,"debtbox.js");}).then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"fdguard.js");}).then(function(){return loadInto(w,"hkfix.js");}).then(function(){return loadInto(w,"hknote.js");}).then(function(){return loadInto(w,"hkresub.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"wahotel.js");}).then(function(){return loadInto(w,"statuswa.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("33G READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("33G failed: "+err);});
   };
   document.body.appendChild(frame);
 }
