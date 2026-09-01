@@ -31,12 +31,64 @@ function canSeeReply(root,r){
   if((r.mode||"all")==="person")return r.byId===user.id||root.byId===user.id||r.toId===user.id;
   return canSeeRoot(root);
 }
+function lastTs(m){
+  var t=m.ts||0;
+  (m.replies||[]).forEach(function(r){if((r.ts||0)>t)t=r.ts;});
+  return t;
+}
+function myRead(m){
+  return (m.reads||[]).filter(function(r){return r.byId===user.id;})[0];
+}
+function isUnread(m){
+  if(!user||m.byId===user.id&&!(m.replies||[]).some(function(r){return r.byId!==user.id;})) {
+    var mine=myRead(m);
+    if(mine&&mine.ts>=lastTs(m))return false;
+    if(m.byId===user.id&&!(m.replies||[]).length)return false;
+  }
+  var rec=myRead(m);
+  return !rec||rec.ts<lastTs(m);
+}
 function roots(){
   return (db.staffMsgs||[]).filter(function(m){return !m.parentId&&canSeeRoot(m);}).sort(function(a,b){return (b.ts||0)-(a.ts||0);});
 }
 function findRoot(id){return (db.staffMsgs||[]).filter(function(m){return m.id===id;})[0];}
 function stamp(){
   return {by:user.name,byId:user.id,role:role(),at:new Date().toLocaleString(),ts:Date.now(),day:typeof today==="function"?today():""};
+}
+function receiptLine(m){
+  var list=(m.reads||[]).slice().sort(function(a,b){return (b.ts||0)-(a.ts||0);});
+  if(!list.length)return "<small>Sent · no read receipt yet</small>";
+  return "<small>Read by "+list.map(function(r){return r.by+" · "+r.at;}).join(" · ")+"</small>";
+}
+function markVisibleRead(){
+  if(!user)return;
+  var changed=false;
+  roots().forEach(function(m){
+    if(!m.reads)m.reads=[];
+    var rec=myRead(m);
+    var now=Date.now();
+    if(!rec){
+      m.reads.push({byId:user.id,by:user.name,at:new Date().toLocaleString(),ts:now});
+      changed=true;
+    }else if(rec.ts<lastTs(m)){
+      rec.at=new Date().toLocaleString();rec.ts=now;changed=true;
+    }
+  });
+  if(changed){
+    try{save();}catch(e){}
+    try{
+      if("Notification" in window&&Notification.permission==="default")Notification.requestPermission();
+    }catch(e){}
+  }
+}
+function pingUnread(){
+  try{
+    if(!("Notification" in window)||Notification.permission!=="granted")return;
+    var n=roots().filter(isUnread).length;
+    if(!n||window.__chatPing===n)return;
+    window.__chatPing=n;
+    new Notification("Posh Manager",{body:n+" unread staff loop"+(n>1?"s":""),tag:"posh-chat"});
+  }catch(e){}
 }
 window.poshSendChat=function(text,channel,toId){
   if(!user){alert("Sign in first");return;}
@@ -54,11 +106,11 @@ window.poshSendChat=function(text,channel,toId){
     id:"ch"+s.ts+"_"+Math.random().toString(36).slice(2,6),
     channel:channel,site:site(),by:s.by,byId:s.byId,role:s.role,
     toId:to?to.id:"",toName:to?to.name:"",toRole:to?to.role:"",
-    text:text,day:s.day,at:s.at,ts:s.ts,replies:[]
+    text:text,day:s.day,at:s.at,ts:s.ts,replies:[],reads:[{byId:s.byId,by:s.by,at:s.at,ts:s.ts}]
   });
   try{save();}catch(e){}
   try{draw();}catch(e){}
-  alert(to?("Loop opened with "+to.name+". Publish so they Refresh."):"Loop opened. Publish so others Refresh.");
+  alert(to?("Loop opened with "+to.name+". Waiting for their read receipt after they Refresh."):"Loop opened. Read receipts appear when others open the dialogue.");
 };
 window.poshReplyChat=function(id,text,mode){
   if(!user){alert("Sign in first");return;}
@@ -79,15 +131,20 @@ window.poshReplyChat=function(id,text,mode){
     text:text,at:s.at,ts:s.ts
   });
   root.lastAt=s.at;root.lastBy=s.by;
+  if(!root.reads)root.reads=[];
+  root.reads=root.reads.filter(function(r){return r.byId===user.id;});
+  root.reads.push({byId:user.id,by:user.name,at:s.at,ts:s.ts});
   try{save();}catch(e){}
   try{draw();}catch(e){}
-  alert(mode==="person"?("Reply sent to "+(toUser&&toUser.name||root.by)+". Same loop. Publish."):"Reply sent to everyone on this loop. Publish.");
+  alert(mode==="person"?("Reply sent to "+(toUser&&toUser.name||root.by)+". Receipt when they open it."):"Reply sent to the loop. Receipts update when they open Staff dialogue.");
 };
 window.poshChatPrompt=function(){
   if(!user){alert("Sign in first");return;}
+  try{if("Notification" in window&&Notification.permission==="default")Notification.requestPermission();}catch(e){}
   var open=roots();
+  var unread=open.filter(isUnread).length;
   if(open.length){
-    var want=prompt("Type NEW to start a loop, or REPLY to continue the latest one","REPLY");
+    var want=prompt((unread?unread+" unread loop(s). ":"")+"Type NEW to start a loop, or REPLY to continue the latest one","REPLY");
     if(want===null)return;
     if(String(want).trim().toUpperCase()!=="NEW"){
       var mode=prompt("Reply to:\n1 = the person who wrote it\n2 = everyone on this loop","1");
@@ -111,19 +168,21 @@ window.poshChatPrompt=function(){
 };
 function box(){
   if(!user)return "";
+  var unread=roots().filter(isUnread).length;
   var opts=people().map(function(u){return "<option value='"+u.id+"'>"+u.name+" · "+labelRole(u.role)+(u.site?(" · "+u.site):"")+"</option>";}).join("");
   var cards=roots().slice(0,20).map(function(m){
     var where=m.channel==="dm"?("To "+(m.toName||"staff")):m.channel==="hotel"?"Hotel":(m.site||"Location");
+    var flag=isUnread(m)?" <b>UNREAD</b>":" · seen";
     var thread=(m.replies||[]).filter(function(r){return canSeeReply(m,r);}).map(function(r){
       var tag=r.mode==="person"?("private to "+(r.toName||"them")):"to all on loop";
       return "<p style='margin-left:12px'><b>"+r.by+"</b> · "+labelRole(r.role)+" · "+tag+"<br>"+r.text+"<br><small>"+r.at+"</small></p>";
     }).join("");
-    return "<div class=card><p><b>"+m.by+"</b> · "+labelRole(m.role)+" · "+where+"<br>"+m.text+"<br><small>"+m.at+"</small></p>"+
-      thread+
+    return "<div class=card><p><b>"+m.by+"</b> · "+labelRole(m.role)+" · "+where+flag+"<br>"+m.text+"<br><small>"+m.at+"</small></p>"+
+      thread+"<p>"+receiptLine(m)+"</p>"+
       "<p><button type=button class=chatPerson data-id='"+m.id+"'>Reply to person</button> <button type=button class=chatAll data-id='"+m.id+"'>Reply to all</button></p></div>";
   }).join("");
   return "<div class=card id=staffChat><h3>Staff dialogue</h3>"+
-    "<p>Start a loop, then keep talking. Reply to person stays between you two. Reply to all stays on the same loop.</p>"+
+    "<p>"+(unread?("<b>"+unread+" unread</b>. Opening this card marks them read."):"All loops you can see are marked read.")+"</p>"+
     "<p>Start with</p><select id=chatTo><option value='site'>This location · "+(site()||"")+"</option><option value='hotel'>Whole hotel</option>"+opts+"</select>"+
     "<textarea id=chatText placeholder='First message, or use Reply on a loop below'></textarea>"+
     "<p><button type=button class=btn id=chatSend>Start loop</button></p>"+
@@ -154,10 +213,12 @@ if(!window.__chatClicks){
 }
 function inject(){
   if(!user)return;
+  pingUnread();
   if(document.getElementById("staffChat"))return;
   var wrap=document.querySelector(".wrap")||document.getElementById("app");
   if(!wrap)return;
   wrap.insertAdjacentHTML("afterbegin",box());
+  markVisibleRead();
 }
 var _draw=draw;
 draw=function(){
