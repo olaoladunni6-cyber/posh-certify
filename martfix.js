@@ -30,23 +30,28 @@ function bump(id,n){
   row.qty=Math.max(0,Number(row.qty||0)+Number(n||0));
 }
 function n2(n){return "NGN "+Number(n||0).toLocaleString();}
-function isDesk(){return user&&(user.role==="frontdesk"||user.role==="Front Desk"||user.role==="superadmin"||user.role==="storekeeper");}
+function role(){return user&&user.role||"";}
+function isDesk(){return role()==="frontdesk"||role()==="Front Desk"||role()==="superadmin"||role()==="storekeeper";}
+function isLead(){return role()==="manager"||role()==="ceo"||role()==="gm"||role()==="accountant"||role()==="superadmin";}
 function formHtml(){
   var opts=db.martItems.map(function(it){return "<option value='"+it.id+"'>"+it.name+" — "+n2(it.price)+" — stock "+stock(it.id)+"</option>";}).join("");
-  var sold=(db.martSales||[]).filter(function(s){return s.site===site()&&s.day===(typeof today==="function"?today():s.day);}).slice().reverse().map(function(s){return "<p>"+s.qty+" x "+s.name+" · "+n2(s.amount)+" · "+(s.by||"")+"</p>";}).join("");
-  return "<div class=card id=martCard><h3>Mini mart</h3>"+
-    "<p>Choose item and quantity here, then use the gold bar.</p>"+
-    "<p>Item</p><select id=martItem>"+(opts||"<option>No items seeded</option>")+"</select>"+
-    "<p>Quantity</p><input id=martQty type=number min=1 value=1>"+
-    "<p>Guest (optional)</p><input id=martGuest>"+
-    "<p>Room (optional)</p><input id=martRoom>"+
-    "<p>New item name</p><input id=martNewName>"+
-    "<p>New item price</p><input id=martNewPrice type=number min=0>"+
+  var sold=(db.martSales||[]).filter(function(s){return (!s.site||s.site===site()||role()==="ceo"||role()==="superadmin")&&s.day===(typeof today==="function"?today():s.day);}).slice().reverse().map(function(s){return "<p>"+s.qty+" x "+s.name+" · "+n2(s.amount)+" · "+(s.by||"")+"</p>";}).join("");
+  var picker=isDesk()&&role()!=="ceo"?("<p>Choose item and quantity here, then use the gold bar.</p><p>Item</p><select id=martItem>"+(opts||"<option>No items</option>")+"</select><p>Quantity</p><input id=martQty type=number min=1 value=1><p>Guest (optional)</p><input id=martGuest><p>Room (optional)</p><input id=martRoom><p>New item name</p><input id=martNewName><p>New item price</p><input id=martNewPrice type=number min=0>"):"";
+  return "<div class=card id=martCard><h3>Mini mart sales today</h3>"+picker+
     "<p>Stock at "+site()+"</p>"+db.martItems.map(function(it){return "<p>"+it.name+": <b>"+stock(it.id)+"</b></p>";}).join("")+
     "<p>Sold today</p>"+(sold||"<p>None yet.</p>")+"</div>";
 }
+function stripCheckinMart(){
+  ["cinMart","cinMartNote"].forEach(function(id){
+    var el=document.getElementById(id);if(!el)return;
+    var prev=el.previousElementSibling;
+    if(prev&&/mini\s*mart/i.test(prev.textContent||""))prev.parentNode.removeChild(prev);
+    el.parentNode.removeChild(el);
+  });
+}
 function inject(){
-  if(!isDesk())return;
+  stripCheckinMart();
+  if(!(isDesk()||isLead()))return;
   if(document.getElementById("martCard"))return;
   var wrap=document.querySelector(".wrap")||document.getElementById("app");
   if(!wrap)return;
@@ -58,11 +63,11 @@ draw=function(){
   try{inject();}catch(e){}
 };
 window.poshMartSell=function(){
-  if(!isDesk()){alert("Front Desk only");return;}
+  if(role()!=="frontdesk"&&role()!=="Front Desk"){alert("Front Desk only");return;}
   var id=(document.getElementById("martItem")||{}).value;
   var qty=parseInt((document.getElementById("martQty")||{}).value,10);
   var it=db.martItems.filter(function(x){return x.id===id;})[0];
-  if(!it){alert("Choose an item from the Mini mart list on Desk.");return;}
+  if(!it){alert("Choose an item from Mini mart on Desk.");return;}
   if(!(qty>0)){alert("Enter quantity on Desk first.");return;}
   if(stock(it.id)<qty){alert("Stock is "+stock(it.id)+". Receive stock first.");return;}
   bump(it.id,-qty);
@@ -77,7 +82,7 @@ window.poshMartReceive=function(){
   var id=(document.getElementById("martItem")||{}).value;
   var qty=parseInt((document.getElementById("martQty")||{}).value,10);
   var it=db.martItems.filter(function(x){return x.id===id;})[0];
-  if(!it){alert("Choose an item from the Mini mart list on Desk.");return;}
+  if(!it){alert("Choose an item from Mini mart on Desk.");return;}
   if(!(qty>0)){alert("Enter quantity on Desk first.");return;}
   bump(it.id,qty);
   db.martMoves.push({id:"mm"+Date.now(),item:it.id,qty:qty,kind:"receive",site:site(),by:user.name,day:typeof today==="function"?today():"",at:new Date().toLocaleString()});
@@ -96,6 +101,11 @@ window.poshMartAddItem=function(){
   try{draw();}catch(e){}
   alert("Added "+name);
 };
+if(!window.__dashFix){
+  var s=document.createElement("script");
+  s.src="dashfix.js?v="+Date.now();
+  document.body.appendChild(s);
+}
 try{draw();}catch(e){}
 }
 boot();
