@@ -3,20 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 33N</title>
+<title>Posh Manager 34A</title>
 <style>
-html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui}
-#bar{padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512}
+html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui;overflow:hidden}
+#bar{position:relative;z-index:50;padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512;pointer-events:auto}
 #msg{display:block;margin-bottom:8px;white-space:pre-wrap}
-#acts button{border:0;border-radius:999px;padding:10px 14px;background:#101512;color:#fff;font-weight:700;margin:0 6px 6px 0}
-iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:56px;height:calc(100% - 56px)}
-iframe.tall{top:220px;height:calc(100% - 220px)}
+#acts button{border:0;border-radius:999px;padding:10px 14px;background:#101512;color:#fff;font-weight:700;margin:0 6px 6px 0;pointer-events:auto}
+iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:120px;height:calc(100% - 120px);z-index:1;background:#fff}
 #vidWrap{display:none;margin-top:6px}#vidWrap.on{display:block}
 </style>
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 33N — loading…</span>
+  <span id=msg>POSH MANAGER 34A — loading…</span>
   <div id=acts>
     <button type=button id=barTok>Save token</button>
     <button type=button id=barPub>Publish</button>
@@ -30,6 +29,7 @@ iframe.tall{top:220px;height:calc(100% - 220px)}
     <button type=button id=barOpen>Submit opening</button>
     <button type=button id=barClose>Submit closing</button>
     <button type=button id=barFolio>Save folio</button>
+    <button type=button id=barExtend>Extend stay</button>
     <button type=button id=barShift>Submit shift</button>
     <button type=button id=barAck>Acknowledge</button>
     <button type=button id=barCert>Certify room</button>
@@ -44,32 +44,33 @@ iframe.tall{top:220px;height:calc(100% - 220px)}
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260901AN"+Date.now(),frame,log=[];
-var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js"];
-var ALL=["barTok","barPub","barPull","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom"];
+var V="20260901BA"+Date.now(),frame,log=[];
+var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js","dashfix.js"];
+var ALL=["barTok","barPub","barPull","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barExtend","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
+function fitFrame(){
+  var bar=document.getElementById("bar");
+  if(!frame||!bar)return;
+  var h=Math.max(bar.offsetHeight,80);
+  frame.style.top=h+"px";
+  frame.style.height="calc(100% - "+h+"px)";
+}
 function loadInto(w,src){
   return fetch(src+"?v="+V,{cache:"reload"}).then(function(r){
     if(!r.ok)throw new Error("HTTP "+r.status);
     return r.text();
   }).then(function(code){
-    try{
-      w.eval(code);
-      log.push(src.replace(".js","")+":ok");
-    }catch(e){
-      log.push(src+":ERR "+(e&&e.message?e.message:e));
-    }
-  }).catch(function(e){
-    log.push(src+":FETCH "+(e&&e.message?e.message:e));
-  });
+    try{w.eval(code);log.push(src.replace(".js","")+":ok");}
+    catch(e){log.push(src+":ERR "+(e&&e.message?e.message:e));}
+  }).catch(function(e){log.push(src+":FETCH "+(e&&e.message?e.message:e));});
 }
 function show(id,on){var el=document.getElementById(id);if(el)el.style.display=on?"inline-block":"none";}
 function val(w,id){var el=w.document.getElementById(id);return el?(el.value||"").trim():"";}
 function num(w,id){var n=parseFloat(val(w,id)||"0");return isNaN(n)?0:n;}
 function openRoom(w){if(!w||!w.roomId||!w.db)return null;return w.db.rooms.filter(function(x){return x.id===w.roomId;})[0]||null;}
 function hkRoom(w){var r=openRoom(w);if(r)return r;return ((w&&w.db&&w.db.rooms||[]).filter(function(x){return w.user&&x.hk===w.user.id&&x.status!=="certified"&&x.status!=="ooo";})[0]||null);}
-function hidePageBtns(w){try{var st=w.document.getElementById("hidePageBtns");if(!st){st=w.document.createElement("style");st.id="hidePageBtns";w.document.head.appendChild(st);}st.textContent="#send,#sendL,#lrep,#cert,#rel,#ooo,#saveCin,#submitShift{display:none!important}";}catch(e){}}
+function hidePageBtns(w){try{var st=w.document.getElementById("hidePageBtns");if(st)st.textContent="";}catch(e){}}
 function hookErrors(w){
   try{
     w.onerror=function(m,s,l){say("JS "+m+" @"+(s||"")+":"+l);return false;};
@@ -83,48 +84,56 @@ function callMart(fn,label){
   try{w[fn]();}catch(e){alert(label+" crashed: "+e);}
 }
 function paintBar(){
-  var w=win(),fr=frame;ALL.forEach(function(id){show(id,false);});document.getElementById("vidWrap").className="";
-  if(!w||!w.user){if(fr)fr.className="";return;}hidePageBtns(w);if(fr)fr.className="tall";
+  var w=win();ALL.forEach(function(id){show(id,false);});document.getElementById("vidWrap").className="";
+  if(!w||!w.user){fitFrame();return;}
+  hidePageBtns(w);
   var role=w.user.role,r=openRoom(w);
-  if(role==="housekeeper"){show("barSaveCnt",true);show("barLaundry",true);show("barSendRoom",true);show("barFix",true);show("barMaint",true);show("barPub",true);document.getElementById("vidWrap").className="on";say("Housekeeper");return;}
-  if(role==="frontdesk"){show("barTok",true);show("barPub",true);show("barPull",true);show("barIn",true);show("barOpen",true);show("barClose",true);show("barFolio",true);show("barMartSell",true);show("barMartIn",true);show("barMartItem",true);show("barShift",true);show("barFix",true);show("barMaint",true);show("barReply",true);say(typeof w.poshMartSell==="function"?"Front Desk — Mini mart on Desk":"Front Desk — MART NOT LOADED");return;}
-  if(role==="manager"){show("barTok",true);show("barPub",true);show("barPull",true);show("barAck",true);show("barCert",true);show("barSvc",true);show("barOOO",true);show("barFix",true);show("barMaint",true);say(r?("Room "+r.number):"Open a room");return;}
-  if(role==="accountant"||role==="ceo"){show("barTok",true);show("barPub",true);show("barPull",true);show("barQuery",true);show("barReply",true);say("Query sales");return;}
-  if(role==="superadmin"){show("barTok",true);show("barPub",true);show("barPull",true);show("barQuery",true);show("barMartIn",true);show("barMartItem",true);say("Super Admin");return;}
-  show("barTok",true);show("barPub",true);show("barPull",true);say(w.user.name);
+  show("barTok",true);show("barPub",true);show("barPull",true);
+  if(role==="housekeeper"){show("barSaveCnt",true);show("barLaundry",true);show("barSendRoom",true);show("barFix",true);show("barMaint",true);document.getElementById("vidWrap").className="on";say("Housekeeper");}
+  else if(role==="frontdesk"){show("barIn",true);show("barOpen",true);show("barClose",true);show("barFolio",true);show("barExtend",true);show("barMartSell",true);show("barMartIn",true);show("barMartItem",true);show("barShift",true);show("barFix",true);show("barMaint",true);show("barReply",true);say("Front Desk — folio needs checkout date");}
+  else if(role==="manager"){show("barAck",true);show("barCert",true);show("barSvc",true);show("barOOO",true);show("barFix",true);show("barMaint",true);show("barQuery",true);show("barReply",true);say(r?("Room "+r.number):"Open a room or Desk");}
+  else if(role==="accountant"||role==="ceo"){show("barQuery",true);show("barReply",true);say("Query + Desk status");}
+  else if(role==="superadmin"){show("barQuery",true);show("barMartIn",true);show("barMartItem",true);say("Super Admin");}
+  else say(w.user.name);
+  fitFrame();
 }
 setInterval(paintBar,800);
+window.addEventListener("resize",fitFrame);
 document.getElementById("barMartSell").onclick=function(){callMart("poshMartSell","Sell mini mart");};
 document.getElementById("barMartIn").onclick=function(){callMart("poshMartReceive","Receive mini mart");};
 document.getElementById("barMartItem").onclick=function(){callMart("poshMartAddItem","Add mart item");};
-document.getElementById("barQuery").onclick=function(){
-  var w=win();if(!w||!w.user)return;
-  var list=(w.db.salesQueries||[]).filter(function(q){return (!w.user.site||!q.site||q.site===w.user.site)&&(q.status||"open")!=="closed";});
-  if(list.length){
-    var more=prompt("Continue this dialogue, or type NEW","");
-    if(more===null)return;
-    if(String(more).trim().toUpperCase()!=="NEW"){
-      if(w.poshContinueQuery)w.poshContinueQuery(list[list.length-1],more,"accountant");
-      try{w.save();}catch(e){}alert("Added to the same dialogue.");return;
-    }
-  }
-  var today=w.today?w.today():"";
-  var from=prompt("From date YYYY-MM-DD",today);if(!from)return;
-  var to=prompt("To date YYYY-MM-DD",from);if(!to)return;
-  var note=prompt("Question for Front Desk?","Please confirm room, extras and mini mart");if(note===null)return;
-  if(!w.db.salesQueries)w.db.salesQueries=[];
-  w.db.salesQueries.push({id:"sq"+Date.now(),from:from,to:to,site:w.user.site,by:w.user.name,byId:w.user.id,at:new Date().toLocaleString(),note:String(note).trim(),status:"open",thread:[{role:"accountant",by:w.user.name,at:new Date().toLocaleString(),text:String(note).trim()}],replies:[]});
-  try{w.save();}catch(e){}alert("Query opened.");
-};
-document.getElementById("barReply").onclick=function(){var w=win();if(!w||!w.db)return;var list=(w.db.salesQueries||[]).filter(function(q){return !w.user.site||!q.site||q.site===w.user.site;});if(!list.length){alert("No sales query yet");return;}var text=prompt("Reply on this dialogue","");if(!text)return;if(w.poshContinueQuery)w.poshContinueQuery(list[list.length-1],text,w.user.role==="accountant"?"accountant":"frontdesk");try{w.save();}catch(e){}alert("Reply sent");};
-document.getElementById("barFix").onclick=function(){var w=win();if(!w)return;w.tab="issues";try{w.draw();}catch(e){};};
+document.getElementById("barQuery").onclick=function(){var w=win();if(w&&w.poshStartQuery)w.poshStartQuery();else alert("Open Desk first");};
+document.getElementById("barReply").onclick=function(){var w=win();if(w&&w.poshReplyQuery)w.poshReplyQuery();else alert("Open Desk first");};
+document.getElementById("barFix").onclick=function(){var w=win();if(!w)return;w.tab="issues";try{w.draw();}catch(e){}};
 document.getElementById("barTok").onclick=function(){var v=prompt("Paste GitHub token");if(!v)return;localStorage.setItem("posh-gh-token",v.trim());var w=win();if(w)try{w.localStorage.setItem("posh-gh-token",v.trim());}catch(e){}alert("Token saved");};
 document.getElementById("barPub").onclick=function(){var w=win();if(w&&w.publishHotel)w.publishHotel(function(ok,err){alert(ok?"Published":String(err||"fail"));});};
 document.getElementById("barPull").onclick=function(){var w=win();if(w&&w.refreshHotel)w.refreshHotel(function(ok){alert(ok?"Refreshed":"Could not refresh");});};
-document.getElementById("barFolio").onclick=function(){var w=win();if(!w||w.user.role!=="frontdesk")return;var name=val(w,"cinName"),room=val(w,"cinRoom");if(!name||!room){alert("Fill guest name and room on Desk first");return;}if(!w.db.checkins)w.db.checkins=[];w.db.checkins.push({id:"c"+Date.now(),guest:name,room:room,amount:num(w,"cinAmt"),extras:{early:num(w,"cinEarly"),late:num(w,"cinLate"),laundry:num(w,"cinLau"),other:num(w,"cinOth")},debt:num(w,"cinDebt"),site:w.user.site,by:w.user.name,byId:w.user.id,day:w.today(),at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Room folio saved");};
+document.getElementById("barFolio").onclick=function(){
+  var w=win();if(!w||!w.user||w.user.role!=="frontdesk")return;
+  var name=val(w,"cinName"),room=val(w,"cinRoom"),out=val(w,"cinOut");
+  if(!name||!room){alert("Fill guest name and room on Desk first");return;}
+  if(!out){alert("Enter checkout date on Desk first");return;}
+  if(!w.db.checkins)w.db.checkins=[];
+  w.db.checkins.push({id:"c"+Date.now(),guest:name,room:room,amount:num(w,"cinAmt"),checkout:out,checkedOut:false,extended:false,extras:{early:num(w,"cinEarly"),late:num(w,"cinLate"),laundry:num(w,"cinLau"),other:num(w,"cinOth")},debt:num(w,"cinDebt"),site:w.user.site,by:w.user.name,byId:w.user.id,day:w.today(),at:new Date().toLocaleString()});
+  (w.db.rooms||[]).forEach(function(r){
+    if(String(r.number)!==String(room))return;
+    if(r.status==="ooo")return;
+    r.status="occupied";r.guest=name;r.checkOut=out;
+  });
+  try{w.save();}catch(e){}
+  try{w.draw();}catch(e){}
+  alert("Folio saved. Rm "+room+" occupied until "+out+". At 12:00 on that date it goes In service unless you Extend stay.");
+};
+document.getElementById("barExtend").onclick=function(){
+  var w=win();if(!w)return;
+  var room=val(w,"cinRoom")||prompt("Room number to extend?");
+  if(!room)return;
+  if(w.poshExtendStay)w.poshExtendStay(room);
+  else alert("Open Desk, then tap Extend.");
+};
 document.getElementById("barShift").onclick=function(){var w=win();if(!w.db.shiftReports)w.db.shiftReports=[];w.db.shiftReports.push({id:"sh"+Date.now(),day:w.today(),site:w.user.site,by:w.user.name,at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Shift submitted");};
 document.getElementById("barCert").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}r.status="certified";if(w.pingRoomWa)w.pingRoomWa(r.number,"CERTIFIED. Ready to sell");if(w.poshDeskNote)w.poshDeskNote(r.number,"CERTIFIED");try{w.save();}catch(e){}alert("Certified");};
-document.getElementById("barSvc").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}var note=prompt("What should the housekeeper do?","Spring clean");if(note===null)return;r.status="pending";r.hkNote=String(note).trim();if(w.pingRoomWa)w.pingRoomWa(r.number,"RETURNED TO SERVICE. "+r.hkNote);if(w.poshDeskNote)w.poshDeskNote(r.number,"RETURNED TO SERVICE");try{w.save();}catch(e){}alert("Returned to service");};
+document.getElementById("barSvc").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}var note=prompt("What should the housekeeper do?","Spring clean");if(note===null)return;r.status="pending";r.job="inservice";r.hkNote=String(note).trim();if(w.pingRoomWa)w.pingRoomWa(r.number,"IN SERVICE. "+r.hkNote);if(w.poshDeskNote)w.poshDeskNote(r.number,"IN SERVICE");try{w.save();}catch(e){}alert("In service");};
 document.getElementById("barOOO").onclick=function(){var w=win(),r=openRoom(w);if(!r)return;r.status="ooo";if(w.pingRoomWa)w.pingRoomWa(r.number,"OUT OF ORDER. Do not sell");if(w.poshDeskNote)w.poshDeskNote(r.number,"OUT OF ORDER");try{w.save();}catch(e){}alert("OOO");};
 document.getElementById("barVid").onchange=function(){var w=win(),f=this.files&&this.files[0],r=hkRoom(w);if(!r||!f)return;r.videoReady=true;try{w.save();}catch(e){};};
 document.getElementById("barSaveCnt").onclick=function(){var w=win(),r=hkRoom(w);if(!r)return;if(!r.missing)r.missing={};try{w.document.querySelectorAll(".q").forEach(function(inp){var n=parseInt(inp.value,10);if(n>0)r.missing[inp.getAttribute("data-item")]=n;});}catch(e){}r.laundryChecked=true;try{w.save();}catch(e){}alert("Counts saved");};
@@ -144,9 +153,9 @@ function start(){
     chain.then(function(){
       var bad=log.filter(function(x){return x.indexOf(":ok")<0;});
       var mart=typeof w.poshMartSell==="function"?"mart:yes":"mart:NO";
-      say((bad.length?("33N ERRORS\n"+bad.join("\n")):"33N READY")+" · "+mart);
+      say((bad.length?("34A ERRORS\n"+bad.join("\n")):"34A READY")+" · "+mart);
       try{w.draw();}catch(e){say("draw crashed: "+e);}
-      paintBar();
+      paintBar();fitFrame();
     });
   };
   document.body.appendChild(frame);
