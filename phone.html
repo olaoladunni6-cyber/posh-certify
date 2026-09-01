@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 33I</title>
+<title>Posh Manager 33J</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui}
 #bar{padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512}
@@ -16,7 +16,7 @@ iframe.tall{top:188px;height:calc(100% - 188px)}
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 33I — loading…</span>
+  <span id=msg>POSH MANAGER 33J — loading…</span>
   <div id=acts>
     <button type=button id=barTok>Save token</button>
     <button type=button id=barPub>Publish</button>
@@ -44,7 +44,7 @@ iframe.tall{top:188px;height:calc(100% - 188px)}
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260901AI"+Date.now(),frame;
+var V="20260901AJ"+Date.now(),frame;
 var ALL=["barTok","barPub","barPull","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
@@ -56,9 +56,33 @@ function openRoom(w){if(!w||!w.roomId||!w.db)return null;return w.db.rooms.filte
 function hkRoom(w){var r=openRoom(w);if(r)return r;return ((w&&w.db&&w.db.rooms||[]).filter(function(x){return w.user&&x.hk===w.user.id&&x.status!=="certified"&&x.status!=="ooo";})[0]||null);}
 function hidePageBtns(w){try{var st=w.document.getElementById("hidePageBtns");if(!st){st=w.document.createElement("style");st.id="hidePageBtns";w.document.head.appendChild(st);}st.textContent="#send,#sendL,#lrep,#cert,#rel,#ooo,#saveCin,#submitShift,label.btn{display:none!important}";}catch(e){}}
 function nairaTxt(n){return "NGN "+Number(n||0).toLocaleString();}
+function siteQueries(w){
+  return (w.db.salesQueries||[]).filter(function(q){return !w.user.site||!q.site||q.site===w.user.site;});
+}
+function pickQuery(w){
+  var list=siteQueries(w);
+  if(!list.length)return null;
+  if(list.length===1)return list[list.length-1];
+  var lines=list.map(function(q,i){return (i+1)+". "+(q.from||"")+" to "+(q.to||"")+" · "+(q.status||"open")+" · "+(q.note||"").slice(0,40);}).join("\n");
+  var n=parseInt(prompt("Which dialogue? Type the number\n"+lines,String(list.length)),10);
+  return list[n-1]||list[list.length-1];
+}
 function querySales(){
   var w=win();if(!w||!w.user)return;
   var today=w.today?w.today():"";
+  var existing=siteQueries(w).filter(function(q){return (q.status||"open")!=="closed";});
+  if(existing.length){
+    var go=prompt("Type 0 for a NEW query, or the number of the open dialogue to continue\n"+existing.map(function(q,i){return (i+1)+". "+q.from+" to "+q.to;}).join("\n"),"1");
+    if(go===null)return;
+    var idx=parseInt(go,10);
+    if(idx>0&&existing[idx-1]){
+      var more=prompt("Add to this dialogue with Front Desk", "");
+      if(more===null||!String(more).trim())return;
+      if(w.poshContinueQuery)w.poshContinueQuery(existing[idx-1],more,"accountant");
+      else {if(!existing[idx-1].thread)existing[idx-1].thread=[];existing[idx-1].thread.push({role:"accountant",by:w.user.name,at:new Date().toLocaleString(),text:String(more).trim()});}
+      try{w.save();}catch(e){}alert("Added to dialogue. Front Desk will see it after Refresh.");return;
+    }
+  }
   var from=prompt("From date YYYY-MM-DD",today);if(from===null)return;
   var to=prompt("To date YYYY-MM-DD",from||today);if(to===null)return;
   from=String(from||"").trim();to=String(to||from).trim();
@@ -75,23 +99,23 @@ function querySales(){
     mart+=Number(s.amount||0);
   });
   var billed=rooms+mart+extras;
-  var note=prompt("Comment / question for Front Desk?","Please confirm room, extras and mini mart");
+  var note=prompt("First question for Front Desk?","Please confirm room, extras and mini mart");
   if(note===null)return;
   if(!w.db.salesQueries)w.db.salesQueries=[];
-  w.db.salesQueries.push({id:"sq"+Date.now(),from:from,to:to,site:w.user.site,by:w.user.name,byId:w.user.id,at:new Date().toLocaleString(),rooms:rooms,mart:mart,extras:extras,billed:billed,debt:debt,count:count,note:String(note).trim(),replies:[]});
+  w.db.salesQueries.push({id:"sq"+Date.now(),from:from,to:to,site:w.user.site,by:w.user.name,byId:w.user.id,at:new Date().toLocaleString(),rooms:rooms,mart:mart,extras:extras,billed:billed,debt:debt,count:count,note:String(note).trim(),status:"open",thread:[{role:"accountant",by:w.user.name,at:new Date().toLocaleString(),text:String(note).trim()}],replies:[]});
   try{w.save();}catch(e){}
-  alert("SALES REPORT\n"+from+" to "+to+"\nRoom sales "+nairaTxt(rooms)+"\nMini mart "+nairaTxt(mart)+"\nAncillary extras "+nairaTxt(extras)+"\nTotal billed "+nairaTxt(billed)+"\nNew debt "+nairaTxt(debt)+"\nFolios "+count+"\n\nSent to Front Desk:\n"+note);
+  alert("SALES QUERY OPENED\n"+from+" to "+to+"\nRoom "+nairaTxt(rooms)+"\nMini mart "+nairaTxt(mart)+"\nExtras "+nairaTxt(extras)+"\n\nFront Desk must Refresh, then Reply to query.");
 }
 function replyQuery(){
   var w=win();if(!w||!w.db)return;
-  var list=(w.db.salesQueries||[]).filter(function(q){return !w.user.site||!q.site||q.site===w.user.site;});
-  if(!list.length){alert("No sales query yet");return;}
-  var last=list[list.length-1];
-  var text=prompt("Reply to "+last.by+" ("+last.from+" to "+last.to+")","");
+  var q=pickQuery(w);
+  if(!q){alert("No sales query yet");return;}
+  var text=prompt("Reply on this dialogue\n"+q.from+" to "+q.to+"\nType CLOSE to close it","");
   if(text===null||!String(text).trim())return;
-  if(!last.replies)last.replies=[];
-  last.replies.push({by:w.user.name,at:new Date().toLocaleString(),text:String(text).trim()});
-  try{w.save();}catch(e){}alert("Reply sent");
+  if(String(text).trim().toUpperCase()==="CLOSE"){q.status="closed";try{w.save();}catch(e){}alert("Dialogue closed");return;}
+  if(w.poshContinueQuery)w.poshContinueQuery(q,text,w.user.role==="accountant"?"accountant":"frontdesk");
+  else {if(!q.thread)q.thread=[];q.thread.push({role:w.user.role==="accountant"?"accountant":"frontdesk",by:w.user.name,at:new Date().toLocaleString(),text:String(text).trim()});}
+  try{w.save();}catch(e){}alert("Reply added to the same dialogue. Other phone must Refresh.");
 }
 function paintBar(){
   var w=win(),fr=frame;ALL.forEach(function(id){show(id,false);});document.getElementById("vidWrap").className="";
@@ -116,9 +140,9 @@ document.getElementById("barPub").onclick=function(){var w=win();if(w&&w.publish
 document.getElementById("barPull").onclick=function(){var w=win();if(w&&w.refreshHotel)w.refreshHotel(function(ok){alert(ok?"Refreshed":"Could not refresh");});};
 document.getElementById("barFolio").onclick=function(){var w=win();if(!w||w.user.role!=="frontdesk")return;var name=val(w,"cinName"),room=val(w,"cinRoom");if(!name||!room){alert("Enter guest name and room");return;}if(!w.db.checkins)w.db.checkins=[];w.db.checkins.push({id:"c"+Date.now(),guest:name,room:room,amount:num(w,"cinAmt"),extras:{early:num(w,"cinEarly"),earlyNote:val(w,"cinEarlyNote"),late:num(w,"cinLate"),lateNote:val(w,"cinLateNote"),laundry:num(w,"cinLau"),laundryNote:val(w,"cinLauNote"),other:num(w,"cinOth"),otherNote:val(w,"cinOthNote")},debt:num(w,"cinDebt"),debtNote:val(w,"cinDebtNote"),site:w.user.site,by:w.user.name,byId:w.user.id,day:w.today(),at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Room folio saved (mini mart is separate)");};
 document.getElementById("barShift").onclick=function(){var w=win();if(!w.db.shiftReports)w.db.shiftReports=[];w.db.shiftReports.push({id:"sh"+Date.now(),day:w.today(),site:w.user.site,by:w.user.name,at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Shift submitted");};
-document.getElementById("barCert").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}r.status="certified";r.hkNote="";if(w.pingRoomWa)w.pingRoomWa(r.number,"CERTIFIED. Ready to sell");try{w.save();}catch(e){}alert("Certified. WhatsApp sent.");};
-document.getElementById("barSvc").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}var note=prompt("What should the housekeeper do?","Spring clean");if(note===null)return;r.status="pending";r.hkNote=String(note).trim();if(w.pingRoomWa)w.pingRoomWa(r.number,"RETURNED TO SERVICE. "+r.hkNote);try{w.save();}catch(e){}alert("Returned to service. WhatsApp sent.");};
-document.getElementById("barOOO").onclick=function(){var w=win(),r=openRoom(w);if(!r)return;r.status="ooo";if(w.pingRoomWa)w.pingRoomWa(r.number,"OUT OF ORDER. Do not sell");try{w.save();}catch(e){}alert("OOO. WhatsApp sent.");};
+document.getElementById("barCert").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}r.status="certified";r.hkNote="";if(w.pingRoomWa)w.pingRoomWa(r.number,"CERTIFIED. Ready to sell");if(w.poshDeskNote)w.poshDeskNote(r.number,"CERTIFIED");try{w.save();}catch(e){}alert("Certified. WhatsApp sent.");};
+document.getElementById("barSvc").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}var note=prompt("What should the housekeeper do?","Spring clean");if(note===null)return;r.status="pending";r.hkNote=String(note).trim();if(w.pingRoomWa)w.pingRoomWa(r.number,"RETURNED TO SERVICE. "+r.hkNote);if(w.poshDeskNote)w.poshDeskNote(r.number,"RETURNED TO SERVICE");try{w.save();}catch(e){}alert("Returned to service. WhatsApp sent.");};
+document.getElementById("barOOO").onclick=function(){var w=win(),r=openRoom(w);if(!r)return;r.status="ooo";if(w.pingRoomWa)w.pingRoomWa(r.number,"OUT OF ORDER. Do not sell");if(w.poshDeskNote)w.poshDeskNote(r.number,"OUT OF ORDER");try{w.save();}catch(e){}alert("OOO. WhatsApp sent.");};
 document.getElementById("barVid").onchange=function(){var w=win(),f=this.files&&this.files[0],r=hkRoom(w);if(!r||!f)return;r.videoReady=true;try{w.save();}catch(e){};};
 document.getElementById("barSaveCnt").onclick=function(){var w=win(),r=hkRoom(w);if(!r)return;if(!r.missing)r.missing={};try{w.document.querySelectorAll(".q").forEach(function(inp){var n=parseInt(inp.value,10);if(n>0)r.missing[inp.getAttribute("data-item")]=n;});}catch(e){}r.laundryChecked=true;try{w.save();}catch(e){}alert("Counts saved");};
 document.getElementById("barLaundry").onclick=function(){var w=win(),r=hkRoom(w);if(!r)return;var items={};try{w.document.querySelectorAll(".sq").forEach(function(inp){var n=parseInt(inp.value,10);if(n>0)items[inp.getAttribute("data-item")]=n;});}catch(e){}if(!Object.keys(items).length&&w.linenItems){(w.linenItems()||[]).forEach(function(it){var n=parseInt(prompt(it.name+" sent to laundry?","0"),10);if(n>0)items[it.id]=n;});}if(!Object.keys(items).length){alert("Type linen quantities on the room first");return;}if(!w.db.slips)w.db.slips=[];w.db.slips.push({id:"s"+Date.now(),room:r.number,site:r.site,by:w.user.name,at:new Date().toLocaleString(),items:items,status:"sent",summary:Object.keys(items).map(function(k){return items[k]+" x "+(w.itemName?w.itemName(k):k);}).join(", ")});try{w.save();}catch(e){}alert("Sent to laundry");};
@@ -132,7 +156,7 @@ function start(){
   frame=document.createElement("iframe");frame.src="app.html?v="+V;
   frame.onload=function(){
     var w=win();
-    loadInto(w,"desk.js").then(function(){return loadInto(w,"minimart.js");}).then(function(){return loadInto(w,"salesq.js");}).then(function(){return loadInto(w,"acctquery.js");}).then(function(){return loadInto(w,"debtbox.js");}).then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"fdguard.js");}).then(function(){return loadInto(w,"hkfix.js");}).then(function(){return loadInto(w,"hknote.js");}).then(function(){return loadInto(w,"hkresub.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"wahotel.js");}).then(function(){return loadInto(w,"statuswa.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("33I READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("33I failed: "+err);});
+    loadInto(w,"desk.js").then(function(){return loadInto(w,"minimart.js");}).then(function(){return loadInto(w,"salesq.js");}).then(function(){return loadInto(w,"acctquery.js");}).then(function(){return loadInto(w,"debtbox.js");}).then(function(){return loadInto(w,"fdclock.js");}).then(function(){return loadInto(w,"fdguard.js");}).then(function(){return loadInto(w,"hkfix.js");}).then(function(){return loadInto(w,"hknote.js");}).then(function(){return loadInto(w,"hkresub.js");}).then(function(){return loadInto(w,"clock.js");}).then(function(){return loadInto(w,"loss.js");}).then(function(){return loadInto(w,"fixtures.js");}).then(function(){return loadInto(w,"evidence.js");}).then(function(){return loadInto(w,"wahotel.js");}).then(function(){return loadInto(w,"statuswa.js");}).then(function(){return loadInto(w,"sync.js");}).then(function(){say("33J READY");try{w.draw();}catch(e){}paintBar();}).catch(function(err){say("33J failed: "+err);});
   };
   document.body.appendChild(frame);
 }
