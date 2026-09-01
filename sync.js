@@ -23,12 +23,12 @@ function slim(src){
   return x;
 }
 function stampOf(x){
-  return String((x&&x.updated)||"")+"|c"+(x&&x.checkins?x.checkins.length:0)+"|m"+(x&&x.martSales?x.martSales.length:0);
+  return String((x&&x.updated)||"")+"|c"+(x&&x.checkins?x.checkins.length:0)+"|m"+(x&&x.martSales?x.martSales.length:0)+"|ch"+(x&&x.staffMsgs?x.staffMsgs.length:0);
 }
 function applyRemote(x){
   if(!x||!x.users||!x.users.length)return false;
   var keepRooms=db.rooms||[];
-  var keep={checkins:db.checkins,clocks:db.clocks,fdChecks:db.fdChecks,debts:db.debts,shiftReports:db.shiftReports,slips:db.slips,deskNotes:db.deskNotes,issues:db.issues,salesQueries:db.salesQueries,martSales:db.martSales,martMoves:db.martMoves,martStock:db.martStock,martItems:db.martItems};
+  var keep={checkins:db.checkins,clocks:db.clocks,fdChecks:db.fdChecks,debts:db.debts,shiftReports:db.shiftReports,slips:db.slips,deskNotes:db.deskNotes,issues:db.issues,salesQueries:db.salesQueries,martSales:db.martSales,martMoves:db.martMoves,martStock:db.martStock,martItems:db.martItems,staffMsgs:db.staffMsgs};
   db=x;
   db.checkins=unionById(x.checkins,keep.checkins);
   db.clocks=unionById(x.clocks,keep.clocks);
@@ -43,6 +43,7 @@ function applyRemote(x){
   db.martMoves=unionById(x.martMoves,keep.martMoves);
   db.martStock=unionById(x.martStock,keep.martStock);
   db.martItems=unionById(x.martItems,keep.martItems);
+  db.staffMsgs=unionById(x.staffMsgs,keep.staffMsgs);
   var map={};
   keepRooms.forEach(function(r){map[r.id]=r;});
   (db.rooms||[]).forEach(function(r){
