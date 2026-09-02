@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 34H</title>
+<title>Posh Manager 34J</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui;overflow:hidden}
-#bar{position:relative;z-index:200;padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512;pointer-events:auto}
+#bar{position:fixed;top:0;left:0;right:0;z-index:9999;padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512;pointer-events:auto}
 #msg{display:block;margin-bottom:8px;white-space:pre-wrap}
 #acts button{border:0;border-radius:999px;padding:10px 14px;background:#101512;color:#fff;font-weight:700;margin:0 6px 6px 0;pointer-events:auto}
 iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:160px;height:calc(100% - 160px);z-index:1;background:#fff}
@@ -15,7 +15,7 @@ iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:160px;heig
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 34H — loading…</span>
+  <span id=msg>POSH MANAGER 34J — loading…</span>
   <div id=acts>
     <button type=button id=barTok>Save token</button>
     <button type=button id=barPub>Publish</button>
@@ -48,7 +48,7 @@ iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:160px;heig
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260902D"+Date.now(),frame,log=[],hkClip=null;
+var V="20260902E"+Date.now(),frame,log=[],hkClip=null;
 var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js","dashfix.js","chat.js","alerts.js"];
 var ALL=["barTok","barPub","barPull","barAlert","barChat","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barExtend","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom","barWaDm","barWaHotel"];
 function win(){return frame&&frame.contentWindow;}
@@ -164,12 +164,19 @@ function askAlerts(){
   go(window,"This phone");
   var w=win();if(w&&w.poshAllowAlerts)w.poshAllowAlerts();else if(w)go(w,"App");
 }
+var lastPaint="";
 function paintBar(){
-  var w=win();ALL.forEach(function(id){show(id,false);});document.getElementById("vidWrap").className="";
+  var w=win();
+  var role=w&&w.user&&w.user.role||"";
+  var key=role+"|"+(w&&w.user&&w.user.id||"");
+  if(key===lastPaint){fitFrame();return;}
+  lastPaint=key;
+  ALL.forEach(function(id){show(id,false);});
+  document.getElementById("vidWrap").className="";
   show("barTok",true);show("barPub",true);show("barPull",true);show("barAlert",true);
   if(!w||!w.user){fitFrame();return;}
   hidePageBtns(w);
-  var role=w.user.role,r=openRoom(w);
+  var r=openRoom(w);
   show("barChat",true);
   if(role==="housekeeper"){show("barSaveCnt",true);show("barLaundry",true);show("barSendRoom",true);show("barFix",true);show("barMaint",true);show("barWaDm",true);show("barWaHotel",true);document.getElementById("vidWrap").className="on";say("Housekeeper");}
   else if(role==="frontdesk"){show("barIn",true);show("barOpen",true);show("barClose",true);show("barFolio",true);show("barExtend",true);show("barMartSell",true);show("barMartIn",true);show("barMartItem",true);show("barShift",true);show("barFix",true);show("barMaint",true);show("barReply",true);say("Front Desk");}
@@ -243,7 +250,7 @@ function start(){
     FILES.forEach(function(src){chain=chain.then(function(){return loadInto(w,src);});});
     chain.then(function(){
       var bad=log.filter(function(x){return x.indexOf(":ok")<0;});
-      say((bad.length?("34H ERRORS\n"+bad.join("\n")):"34H READY")+" · video attached via Share");
+      say((bad.length?("34J ERRORS\n"+bad.join("\n")):"34J READY")+" · video attached via Share");
       try{w.draw();}catch(e){say("draw crashed: "+e);}
       paintBar();fitFrame();
     });
