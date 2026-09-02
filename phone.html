@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 34J</title>
+<title>Posh Manager 34K</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui;overflow:hidden}
 #bar{position:fixed;top:0;left:0;right:0;z-index:9999;padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512;pointer-events:auto}
 #msg{display:block;margin-bottom:8px;white-space:pre-wrap}
-#acts button{border:0;border-radius:999px;padding:10px 14px;background:#101512;color:#fff;font-weight:700;margin:0 6px 6px 0;pointer-events:auto}
+#acts button{touch-action:manipulation;-webkit-tap-highlight-color:#fff;border:0;border-radius:999px;padding:10px 14px;background:#101512;color:#fff;font-weight:700;margin:0 6px 6px 0;pointer-events:auto}
 iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:160px;height:calc(100% - 160px);z-index:1;background:#fff}
 #vidWrap{display:none;margin-top:6px}#vidWrap.on{display:block}
 </style>
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 34J — loading…</span>
+  <span id=msg>POSH MANAGER 34K — loading…</span>
   <div id=acts>
     <button type=button id=barTok>Save token</button>
     <button type=button id=barPub>Publish</button>
@@ -48,7 +48,7 @@ iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:160px;heig
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260902E"+Date.now(),frame,log=[],hkClip=null;
+var V="20260902F"+Date.now(),frame,log=[],hkClip=null;
 var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js","dashfix.js","chat.js","alerts.js"];
 var ALL=["barTok","barPub","barPull","barAlert","barChat","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barExtend","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom","barWaDm","barWaHotel"];
 function win(){return frame&&frame.contentWindow;}
@@ -188,6 +188,20 @@ function paintBar(){
 }
 setInterval(paintBar,800);
 window.addEventListener("resize",fitFrame);
+document.getElementById("acts").addEventListener("touchend",function(ev){
+  var b=ev.target;
+  if(b&&b.closest)b=b.closest("button");
+  if(!b||b.tagName!=="BUTTON")return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  if(typeof b.onclick==="function")b.onclick();
+},true);
+document.getElementById("acts").addEventListener("click",function(ev){
+  var b=ev.target;
+  if(b&&b.closest)b=b.closest("button");
+  if(!b||b.tagName!=="BUTTON")return;
+  ev.stopPropagation();
+},true);
 document.getElementById("barAlert").onclick=askAlerts;
 document.getElementById("barChat").onclick=function(){var w=win();if(w&&w.poshChatPrompt)w.poshChatPrompt();else alert("Sign in first");};
 document.getElementById("barMartSell").onclick=function(){callMart("poshMartSell","Sell mini mart");};
@@ -250,7 +264,7 @@ function start(){
     FILES.forEach(function(src){chain=chain.then(function(){return loadInto(w,src);});});
     chain.then(function(){
       var bad=log.filter(function(x){return x.indexOf(":ok")<0;});
-      say((bad.length?("34J ERRORS\n"+bad.join("\n")):"34J READY")+" · video attached via Share");
+      say((bad.length?("34K ERRORS\n"+bad.join("\n")):"34K READY")+" · video attached via Share");
       try{w.draw();}catch(e){say("draw crashed: "+e);}
       paintBar();fitFrame();
     });
