@@ -11,12 +11,14 @@
 (function(){
   var src="https://cdn.jsdelivr.net/gh/olaoladunni6-cyber/posh-certify@c133dfbaebac463d1ab7257a9515bfbbcf4b6a0f/app.html";
   fetch(src,{cache:"reload"}).then(function(r){return r.text();}).then(function(html){
-    html=html.replace("</body>", "<script src='desk.js?v=20260902N'><\/script></body>");
+    html=html.replace("</body>",
+      "<script src='desk.js?v=20260902P'><\/script>"+
+      "<script src='submitfix.js?v=20260902P'><\/script></body>");
     document.open();
     document.write(html);
     document.close();
   }).catch(function(){
-    document.body.innerHTML='<p>Could not load. Open <a href="https://cdn.jsdelivr.net/gh/olaoladunni6-cyber/posh-certify@c133dfbaebac463d1ab7257a9515bfbbcf4b6a0f/app.html" style="color:#c4a574">the working hotel page</a>.</p>';
+    document.body.innerHTML='<p>Could not load.</p>';
   });
 })();
 </script>
