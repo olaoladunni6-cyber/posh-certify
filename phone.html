@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 34L</title>
+<title>Posh Manager 34M</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui;overflow:hidden}
 #bar{position:fixed;top:0;left:0;right:0;z-index:9999;padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512;pointer-events:auto}
@@ -15,7 +15,7 @@ iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:160px;heig
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 34L — loading…</span>
+  <span id=msg>POSH MANAGER 34M — loading…</span>
   <div id=acts>
     <a class=gbtn href="#do-barTok" id=barTok>Save token</a>
     <a class=gbtn href="#do-barPub" id=barPub>Publish</a>
@@ -48,8 +48,8 @@ iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:160px;heig
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260902G"+Date.now(),frame,log=[],hkClip=null;
-var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js","dashfix.js","chat.js","alerts.js"];
+var V="20260902H"+Date.now(),frame,log=[],hkClip=null;
+var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js","dashfix.js","chat.js","alerts.js","hkflow.js"];
 var ALL=["barTok","barPub","barPull","barAlert","barChat","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barExtend","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom","barWaDm","barWaHotel"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
@@ -73,7 +73,7 @@ function show(id,on){var el=document.getElementById(id);if(el)el.style.display=o
 function val(w,id){var el=w.document.getElementById(id);return el?(el.value||"").trim():"";}
 function num(w,id){var n=parseFloat(val(w,id)||"0");return isNaN(n)?0:n;}
 function openRoom(w){if(!w||!w.roomId||!w.db)return null;return w.db.rooms.filter(function(x){return x.id===w.roomId;})[0]||null;}
-function hkRoom(w){var r=openRoom(w);if(r)return r;return ((w&&w.db&&w.db.rooms||[]).filter(function(x){return w.user&&x.hk===w.user.id&&x.status!=="certified"&&x.status!=="ooo";})[0]||null);}
+function hkRoom(w){var r=openRoom(w);if(r){if(r.status==="certified"||r.status==="ooo"||r.locked)return null;return r;}return ((w&&w.db&&w.db.rooms||[]).filter(function(x){return w.user&&x.hk===w.user.id&&x.status!=="certified"&&x.status!=="ooo"&&!x.locked;})[0]||null);}
 function hidePageBtns(w){try{var st=w.document.getElementById("hidePageBtns");if(st)st.textContent="";}catch(e){}}
 function hookErrors(w){
   try{
@@ -229,8 +229,8 @@ document.getElementById("barExtend").onclick=function(){
   if(w.poshExtendStay)w.poshExtendStay(room);
 };
 document.getElementById("barShift").onclick=function(){var w=win();if(!w.db.shiftReports)w.db.shiftReports=[];w.db.shiftReports.push({id:"sh"+Date.now(),day:w.today(),site:w.user.site,by:w.user.name,at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Shift submitted");};
-document.getElementById("barCert").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}r.status="certified";if(w.pingRoomWa)w.pingRoomWa(r.number,"CERTIFIED. Ready to sell");if(w.poshDeskNote)w.poshDeskNote(r.number,"CERTIFIED");try{w.save();}catch(e){}if(w.poshNotify)w.poshNotify("certify","Room certified","Ready to sell");alert("Certified");};
-document.getElementById("barSvc").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}var note=prompt("What should the housekeeper do?","Spring clean");if(note===null)return;r.status="pending";r.job="inservice";r.hkNote=String(note).trim();if(w.pingRoomWa)w.pingRoomWa(r.number,"IN SERVICE. "+r.hkNote);if(w.poshDeskNote)w.poshDeskNote(r.number,"IN SERVICE");try{w.save();}catch(e){}if(w.poshNotify)w.poshNotify("service","In service",r.hkNote);alert("In service");};
+document.getElementById("barCert").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}if(r.status!=="submitted"&&r.status!=="pending"){alert("Housekeeper must submit checklist + video first");return;}if(w.poshHkLock)w.poshHkLock(r);else{r.status="certified";r.locked=true;}if(w.pingRoomWa)w.pingRoomWa(r.number,"CERTIFIED. Ready to sell");if(w.poshDeskNote)w.poshDeskNote(r.number,"CERTIFIED");try{w.save();}catch(e){}if(w.poshNotify)w.poshNotify("certify","Room certified","Ready to sell");alert("Certified and locked");};
+document.getElementById("barSvc").onclick=function(){var w=win(),r=openRoom(w);if(!r){alert("Open the room first");return;}var note=prompt("What should the housekeeper do?","Spring clean");if(note===null)return;if(w.poshHkReturn)w.poshHkReturn(r,String(note).trim());else{r.status="pending";r.job="inservice";r.hkNote=String(note).trim();r.videoReady=false;r.locked=false;}if(w.pingRoomWa)w.pingRoomWa(r.number,"IN SERVICE. "+r.hkNote);if(w.poshDeskNote)w.poshDeskNote(r.number,"IN SERVICE");try{w.save();}catch(e){}if(w.poshNotify)w.poshNotify("service","In service",r.hkNote);alert("Returned. Housekeeper must checklist + video again.");};
 document.getElementById("barOOO").onclick=function(){var w=win(),r=openRoom(w);if(!r)return;r.status="ooo";if(w.pingRoomWa)w.pingRoomWa(r.number,"OUT OF ORDER. Do not sell");if(w.poshDeskNote)w.poshDeskNote(r.number,"OUT OF ORDER");try{w.save();}catch(e){}if(w.poshNotify)w.poshNotify("ooo","Out of order","Do not sell");alert("OOO");};
 document.getElementById("barVid").onchange=function(){
   var w=win(),f=this.files&&this.files[0],r=hkRoom(w);
@@ -241,9 +241,9 @@ document.getElementById("barVid").onchange=function(){
 };
 document.getElementById("barWaDm").onclick=function(){var w=win();sendHkWa(allDmNumbers(w).length?allDmNumbers(w):siteDmNumbers(w));};
 document.getElementById("barWaHotel").onclick=function(){var w=win();sendHkWa(hotelDmNumbers(w));};
-document.getElementById("barSaveCnt").onclick=function(){var w=win(),r=hkRoom(w);if(!r)return;if(!r.missing)r.missing={};try{w.document.querySelectorAll(".q").forEach(function(inp){var n=parseInt(inp.value,10);if(n>0)r.missing[inp.getAttribute("data-item")]=n;});}catch(e){}r.laundryChecked=true;try{w.save();}catch(e){}alert("Counts saved");};
+document.getElementById("barSaveCnt").onclick=function(){var w=win(),r=hkRoom(w);if(!r)return;if(!r.missing)r.missing={};try{w.document.querySelectorAll(".q").forEach(function(inp){var n=parseInt(inp.value,10);if(n>0)r.missing[inp.getAttribute("data-item")]=n;});}catch(e){}r.laundryChecked=true;r.checklistDone=true;try{w.save();}catch(e){}alert("Checklist saved");};
 document.getElementById("barLaundry").onclick=function(){var w=win(),r=hkRoom(w);if(!r)return;var items={};try{w.document.querySelectorAll(".sq").forEach(function(inp){var n=parseInt(inp.value,10);if(n>0)items[inp.getAttribute("data-item")]=n;});}catch(e){}if(!Object.keys(items).length){alert("Type linen quantities on the room first");return;}if(!w.db.slips)w.db.slips=[];w.db.slips.push({id:"s"+Date.now(),room:r.number,site:r.site,by:w.user.name,at:new Date().toLocaleString(),items:items,status:"sent"});try{w.save();}catch(e){}alert("Sent to laundry");};
-document.getElementById("barSendRoom").onclick=function(){var w=win(),r=hkRoom(w);if(!r)return;if(!r.videoReady){alert("Attach video first");return;}r.status="submitted";try{w.save();}catch(e){}sendHkWa(allDmNumbers(w));};
+document.getElementById("barSendRoom").onclick=function(){var w=win(),r=hkRoom(w);if(!r){alert("No open room. Certified rooms stay closed.");return;}if(r.status==="certified"||r.locked){alert("This room is certified and locked.");return;}if(!(r.laundryChecked||r.checklistDone)){alert("Mark the room checklist first.");return;}if(!r.videoReady){alert("Attach the walkthrough video first.");return;}r.status="submitted";r.hkName=w.user.name;r.submittedAt=new Date().toLocaleString();try{w.save();}catch(e){}sendHkWa(allDmNumbers(w));alert("Submitted for certification");};
 document.getElementById("barIn").onclick=function(){var w=win();if(!w.db.clocks)w.db.clocks=[];w.db.clocks.push({id:"ck"+Date.now(),day:w.today(),site:w.user.site,by:w.user.name,byId:w.user.id,inAt:new Date().toLocaleTimeString(),outAt:""});try{w.save();}catch(e){}try{w.draw();}catch(e){}alert("Clocked in");};
 document.getElementById("barOpen").onclick=function(){var w=win();var items=w.poshCollectOpen?w.poshCollectOpen():[];if(!items.length){alert("Tick the opening checklist on Desk first.");return;}if(!w.db.fdChecks)w.db.fdChecks=[];w.db.fdChecks.push({id:"fc"+Date.now(),day:w.today(),site:w.user.site,kind:"open",by:w.user.name,byId:w.user.id,items:items,note:w.poshOpenNote?w.poshOpenNote():"",at:new Date().toLocaleString(),seen:false,seenBy:""});try{w.save();}catch(e){}try{w.draw();}catch(e){}alert("Opening sent");};
 document.getElementById("barClose").onclick=function(){var w=win();var items=w.poshCollectClose?w.poshCollectClose():[];if(!items.length){alert("Tick the closing checklist on Desk first.");return;}if(!w.db.fdChecks)w.db.fdChecks=[];w.db.fdChecks.push({id:"fc"+Date.now(),day:w.today(),site:w.user.site,kind:"close",by:w.user.name,byId:w.user.id,items:items,note:w.poshCloseNote?w.poshCloseNote():"",at:new Date().toLocaleString(),seen:false,seenBy:""});try{w.save();}catch(e){}try{w.draw();}catch(e){}alert("Closing sent");};
@@ -257,7 +257,7 @@ function start(){
     FILES.forEach(function(src){chain=chain.then(function(){return loadInto(w,src);});});
     chain.then(function(){
       var bad=log.filter(function(x){return x.indexOf(":ok")<0;});
-      say((bad.length?("34L ERRORS\n"+bad.join("\n")):"34L READY")+" · tap Refresh");
+      say((bad.length?("34M ERRORS\n"+bad.join("\n")):"34M READY")+" · HK protocol on");
       try{w.draw();}catch(e){say("draw crashed: "+e);}
       paintBar();fitFrame();
     });
