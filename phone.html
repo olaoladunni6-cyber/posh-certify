@@ -2,20 +2,20 @@
 <html lang="en-NG">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Posh Manager 34N</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Posh Manager 34P</title>
 <style>
-html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui;overflow:hidden}
-#bar{position:fixed;top:0;left:0;right:0;z-index:9999;padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512;pointer-events:auto}
+html,body{margin:0;background:#1c332c;font-family:system-ui}
+#bar{position:sticky;top:0;z-index:20;padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512}
 #msg{display:block;margin-bottom:8px;white-space:pre-wrap}
-#acts a.gbtn{display:inline-block;touch-action:manipulation;-webkit-tap-highlight-color:#fff;border:0;border-radius:999px;padding:10px 14px;background:#101512;color:#fff;font-weight:700;margin:0 6px 6px 0;pointer-events:auto;text-decoration:none}
-iframe{position:fixed;left:0;right:0;width:100%;border:0;top:160px;z-index:1;background:#fff}
+#acts a.gbtn{display:inline-block;touch-action:manipulation;border:0;border-radius:999px;padding:10px 14px;background:#101512;color:#fff;font-weight:700;margin:0 6px 6px 0;text-decoration:none}
+iframe{display:block;width:100%;border:0;min-height:70vh;height:70vh;background:#fff}
 #vidWrap{display:none;margin-top:6px}#vidWrap.on{display:block}
 </style>
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 34N — loading…</span>
+  <span id=msg>POSH MANAGER 34P — loading…</span>
   <div id=acts>
     <a class=gbtn href="#do-barTok" id=barTok>Save token</a>
     <a class=gbtn href="#do-barPub" id=barPub>Publish</a>
@@ -48,19 +48,19 @@ iframe{position:fixed;left:0;right:0;width:100%;border:0;top:160px;z-index:1;bac
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260902J"+Date.now(),frame,log=[],hkClip=null;
+var V="20260902K"+Date.now(),frame,log=[],hkClip=null;
 var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js","dashfix.js","chat.js","alerts.js","hkflow.js","tapfix.js"];
 var ALL=["barTok","barPub","barPull","barAlert","barChat","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barExtend","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom","barWaDm","barWaHotel"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
 function fitFrame(){
-  var bar=document.getElementById("bar");
-  if(!frame||!bar)return;
-  var h=Math.max(bar.offsetHeight,80);
-  var vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
-  frame.style.top=h+"px";
-  frame.style.height=Math.max(140, Math.floor(vh-h))+"px";
+  if(!frame)return;
+  var h=Math.max((window.innerHeight||700)-((document.getElementById("bar")||{}).offsetHeight||120)-12,520);
+  frame.style.position="static";
+  frame.style.top="auto";
   frame.style.bottom="auto";
+  frame.style.height=h+"px";
+  frame.style.minHeight=h+"px";
 }
 function loadInto(w,src){
   return fetch(src+"?v="+V,{cache:"reload"}).then(function(r){
@@ -190,7 +190,6 @@ function paintBar(){
 }
 setInterval(paintBar,800);
 window.addEventListener("resize",fitFrame);
-if(window.visualViewport)window.visualViewport.addEventListener("resize",fitFrame);
 window.addEventListener("hashchange",function(){
   var id=(location.hash||"").replace("#do-","");
   if(!id)return;
@@ -260,7 +259,7 @@ function start(){
     FILES.forEach(function(src){chain=chain.then(function(){return loadInto(w,src);});});
     chain.then(function(){
       var bad=log.filter(function(x){return x.indexOf(":ok")<0;});
-      say((bad.length?("34N ERRORS\n"+bad.join("\n")):"34N READY")+" · bottom taps on");
+      say((bad.length?("34P ERRORS\n"+bad.join("\n")):"34P READY")+" · full page");
       try{w.draw();}catch(e){say("draw crashed: "+e);}
       paintBar();fitFrame();
     });
