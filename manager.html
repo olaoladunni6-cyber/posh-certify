@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en-NG">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Posh Manager</title>
+<style>html,body{margin:0;height:100%;background:#1c332c}iframe{display:block;width:100%;height:100%;border:0;background:#fff}</style>
+</head>
+<body>
+<iframe id=f src="app.html?v=20260902L"></iframe>
+<script>
+var FILES=["desk.js","minimart.js","dashfix.js","hkflow.js","chat.js","sync.js","alerts.js","fdclock.js","salesq.js"];
+var f=document.getElementById("f");
+f.onload=function(){
+  var w=f.contentWindow, v=Date.now(), chain=Promise.resolve();
+  FILES.forEach(function(src){
+    chain=chain.then(function(){
+      return fetch(src+"?v="+v,{cache:"reload"}).then(function(r){return r.text();}).then(function(code){
+        try{w.eval(code);}catch(e){console.log(src,e);}
+      });
+    });
+  });
+};
+</script>
+</body>
+</html>
