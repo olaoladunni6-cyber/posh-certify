@@ -3,52 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 34K</title>
+<title>Posh Manager 34L</title>
 <style>
 html,body{margin:0;height:100%;background:#1c332c;font-family:system-ui;overflow:hidden}
 #bar{position:fixed;top:0;left:0;right:0;z-index:9999;padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512;pointer-events:auto}
 #msg{display:block;margin-bottom:8px;white-space:pre-wrap}
-#acts button{touch-action:manipulation;-webkit-tap-highlight-color:#fff;border:0;border-radius:999px;padding:10px 14px;background:#101512;color:#fff;font-weight:700;margin:0 6px 6px 0;pointer-events:auto}
+#acts a.gbtn{display:inline-block;touch-action:manipulation;-webkit-tap-highlight-color:#fff;border:0;border-radius:999px;padding:10px 14px;background:#101512;color:#fff;font-weight:700;margin:0 6px 6px 0;pointer-events:auto;text-decoration:none}
 iframe{position:fixed;left:0;right:0;bottom:0;width:100%;border:0;top:160px;height:calc(100% - 160px);z-index:1;background:#fff}
 #vidWrap{display:none;margin-top:6px}#vidWrap.on{display:block}
 </style>
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 34K — loading…</span>
+  <span id=msg>POSH MANAGER 34L — loading…</span>
   <div id=acts>
-    <button type=button id=barTok>Save token</button>
-    <button type=button id=barPub>Publish</button>
-    <button type=button id=barPull>Refresh</button>
-    <button type=button id=barAlert>Allow phone alerts</button>
-    <button type=button id=barChat>Staff chat</button>
-    <button type=button id=barQuery>Query sales</button>
-    <button type=button id=barReply>Reply to query</button>
-    <button type=button id=barMartSell>Sell mini mart</button>
-    <button type=button id=barMartIn>Receive mini mart</button>
-    <button type=button id=barMartItem>Add mart item</button>
-    <button type=button id=barIn>Clock in</button>
-    <button type=button id=barOpen>Submit opening</button>
-    <button type=button id=barClose>Submit closing</button>
-    <button type=button id=barFolio>Save folio</button>
-    <button type=button id=barExtend>Extend stay</button>
-    <button type=button id=barShift>Submit shift</button>
-    <button type=button id=barAck>Acknowledge</button>
-    <button type=button id=barCert>Certify room</button>
-    <button type=button id=barSvc>Return to service</button>
-    <button type=button id=barOOO>Set OOO</button>
-    <button type=button id=barFix>Open Fix</button>
-    <button type=button id=barMaint>Send to maintenance</button>
-    <button type=button id=barSaveCnt>Save counts</button>
-    <button type=button id=barLaundry>Send to laundry</button>
-    <button type=button id=barSendRoom>Submit room</button>
-    <button type=button id=barWaDm>Send video to DM</button>
-    <button type=button id=barWaHotel>Send video to hotel DM</button>
+    <a class=gbtn href="#do-barTok" id=barTok>Save token</a>
+    <a class=gbtn href="#do-barPub" id=barPub>Publish</a>
+    <a class=gbtn href="#do-barPull" id=barPull>Refresh</a>
+    <a class=gbtn href="#do-barAlert" id=barAlert>Allow phone alerts</a>
+    <a class=gbtn href="#do-barChat" id=barChat>Staff chat</a>
+    <a class=gbtn href="#do-barQuery" id=barQuery>Query sales</a>
+    <a class=gbtn href="#do-barReply" id=barReply>Reply to query</a>
+    <a class=gbtn href="#do-barMartSell" id=barMartSell>Sell mini mart</a>
+    <a class=gbtn href="#do-barMartIn" id=barMartIn>Receive mini mart</a>
+    <a class=gbtn href="#do-barMartItem" id=barMartItem>Add mart item</a>
+    <a class=gbtn href="#do-barIn" id=barIn>Clock in</a>
+    <a class=gbtn href="#do-barOpen" id=barOpen>Submit opening</a>
+    <a class=gbtn href="#do-barClose" id=barClose>Submit closing</a>
+    <a class=gbtn href="#do-barFolio" id=barFolio>Save folio</a>
+    <a class=gbtn href="#do-barExtend" id=barExtend>Extend stay</a>
+    <a class=gbtn href="#do-barShift" id=barShift>Submit shift</a>
+    <a class=gbtn href="#do-barAck" id=barAck>Acknowledge</a>
+    <a class=gbtn href="#do-barCert" id=barCert>Certify room</a>
+    <a class=gbtn href="#do-barSvc" id=barSvc>Return to service</a>
+    <a class=gbtn href="#do-barOOO" id=barOOO>Set OOO</a>
+    <a class=gbtn href="#do-barFix" id=barFix>Open Fix</a>
+    <a class=gbtn href="#do-barMaint" id=barMaint>Send to maintenance</a>
+    <a class=gbtn href="#do-barSaveCnt" id=barSaveCnt>Save counts</a>
+    <a class=gbtn href="#do-barLaundry" id=barLaundry>Send to laundry</a>
+    <a class=gbtn href="#do-barSendRoom" id=barSendRoom>Submit room</a>
+    <a class=gbtn href="#do-barWaDm" id=barWaDm>Send video to DM</a>
+    <a class=gbtn href="#do-barWaHotel" id=barWaHotel>Send video to hotel DM</a>
   </div>
   <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
 </div>
 <script>
-var V="20260902F"+Date.now(),frame,log=[],hkClip=null;
+var V="20260902G"+Date.now(),frame,log=[],hkClip=null;
 var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js","dashfix.js","chat.js","alerts.js"];
 var ALL=["barTok","barPub","barPull","barAlert","barChat","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barExtend","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom","barWaDm","barWaHotel"];
 function win(){return frame&&frame.contentWindow;}
@@ -188,20 +188,13 @@ function paintBar(){
 }
 setInterval(paintBar,800);
 window.addEventListener("resize",fitFrame);
-document.getElementById("acts").addEventListener("touchend",function(ev){
-  var b=ev.target;
-  if(b&&b.closest)b=b.closest("button");
-  if(!b||b.tagName!=="BUTTON")return;
-  ev.preventDefault();
-  ev.stopPropagation();
-  if(typeof b.onclick==="function")b.onclick();
-},true);
-document.getElementById("acts").addEventListener("click",function(ev){
-  var b=ev.target;
-  if(b&&b.closest)b=b.closest("button");
-  if(!b||b.tagName!=="BUTTON")return;
-  ev.stopPropagation();
-},true);
+window.addEventListener("hashchange",function(){
+  var id=(location.hash||"").replace("#do-","");
+  if(!id)return;
+  try{history.replaceState(null,"",location.pathname+location.search);}catch(e){location.hash="";}
+  var el=document.getElementById(id);
+  if(el&&typeof el.onclick==="function")el.onclick();
+});
 document.getElementById("barAlert").onclick=askAlerts;
 document.getElementById("barChat").onclick=function(){var w=win();if(w&&w.poshChatPrompt)w.poshChatPrompt();else alert("Sign in first");};
 document.getElementById("barMartSell").onclick=function(){callMart("poshMartSell","Sell mini mart");};
@@ -264,7 +257,7 @@ function start(){
     FILES.forEach(function(src){chain=chain.then(function(){return loadInto(w,src);});});
     chain.then(function(){
       var bad=log.filter(function(x){return x.indexOf(":ok")<0;});
-      say((bad.length?("34K ERRORS\n"+bad.join("\n")):"34K READY")+" · video attached via Share");
+      say((bad.length?("34L ERRORS\n"+bad.join("\n")):"34L READY")+" · tap Refresh");
       try{w.draw();}catch(e){say("draw crashed: "+e);}
       paintBar();fitFrame();
     });
