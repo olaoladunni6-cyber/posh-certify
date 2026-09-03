@@ -8,8 +8,7 @@ function site(){return (user&&user.site)||"";}
 function norm(r){return String(r||"").toLowerCase().replace(/\s+/g,"");}
 function seesAll(){
   var r=norm(role());
-  if(r==="ceo"||r==="gm"||r==="generalmanager"||r==="owner"||r==="superadmin")return true;
-  try{if(typeof isGM==="function"&&isGM())return true;}catch(e){}
+  if(r==="ceo"||r==="gm"||r==="generalmanager"||r==="owner")return true;
   try{if(typeof isCEO==="function"&&isCEO())return true;}catch(e){}
   return false;
 }
@@ -28,9 +27,8 @@ function people(){
 function canSeeRoot(m){
   if(!user)return false;
   if(seesAll())return true;
-  if(m.channel==="dm")return m.byId===user.id||m.toId===user.id;
-  if((m.channel||"site")==="hotel")return true;
-  return !m.site||m.site===site();
+  if(m.byId===user.id||m.toId===user.id)return true;
+  return (m.replies||[]).some(function(r){return r.byId===user.id||r.toId===user.id;});
 }
 function canSeeReply(root,r){
   if(!user)return false;
@@ -64,7 +62,7 @@ function mediaHtml(m){
   if(!m)return "";
   if(m.mediaKind==="image"&&m.mediaData)return "<p><img src='"+m.mediaData+"' alt='photo' style='max-width:100%;border-radius:8px'></p>";
   if(m.mediaKind==="video"&&m.mediaData)return "<p><video src='"+m.mediaData+"' controls playsinline style='max-width:100%;border-radius:8px'></video></p>";
-  if(m.mediaKind==="video"||m.mediaReady)return "<p><small>Video on file: "+(m.mediaName||"clip")+". Open from the sender phone or Share to WhatsApp.</small></p>";
+  if(m.mediaKind==="video"||m.mediaReady)return "<p><small>Video on file: "+(m.mediaName||"clip")+".</small></p>";
   if(m.mediaKind==="file")return "<p><small>File: "+(m.mediaName||"attachment")+"</small></p>";
   return "";
 }
@@ -88,10 +86,7 @@ function readFile(file,done){
   var type=file.type||"";
   if(type.indexOf("image/")===0){compressImage(file,done);return;}
   if(type.indexOf("video/")===0){
-    if(file.size>700000){
-      done({kind:"video",name:file.name||"clip.mp4",data:"",ready:true,shareFile:file});
-      return;
-    }
+    if(file.size>700000){done({kind:"video",name:file.name||"clip.mp4",data:"",ready:true,shareFile:file});return;}
     var r=new FileReader();
     r.onload=function(){done({kind:"video",name:file.name||"clip.mp4",data:r.result,ready:true,shareFile:file});};
     r.onerror=function(){done({kind:"video",name:file.name||"clip.mp4",data:"",ready:true,shareFile:file});};
@@ -106,15 +101,8 @@ function readFile(file,done){
 }
 function pickedFile(){var el=document.getElementById("chatFile");return el&&el.files&&el.files[0]?el.files[0]:null;}
 function clearFile(){var el=document.getElementById("chatFile");if(el)el.value="";}
-function attachTo(obj,media){
-  if(!media)return obj;
-  obj.mediaKind=media.kind;obj.mediaName=media.name;obj.mediaData=media.data||"";obj.mediaReady=!!media.ready;
-  return obj;
-}
-function offerShare(file,caption){
-  if(!file||!navigator.share)return;
-  try{navigator.share({title:"Posh Manager",text:caption||"Staff attachment",files:[file]});}catch(e){}
-}
+function attachTo(obj,media){if(!media)return obj;obj.mediaKind=media.kind;obj.mediaName=media.name;obj.mediaData=media.data||"";obj.mediaReady=!!media.ready;return obj;}
+function offerShare(file,caption){if(!file||!navigator.share)return;try{navigator.share({title:"Posh Manager",text:caption||"Staff attachment",files:[file]});}catch(e){}}
 window.poshSendChat=function(text,channel,toId,media){
   if(!user){alert("Sign in first");return;}
   text=String(text||"").trim();
@@ -156,9 +144,7 @@ window.poshReplyChat=function(id,text,mode,media){
   try{draw();}catch(e){}
   if(media&&media.shareFile)offerShare(media.shareFile,text);
 };
-function withPick(fn){
-  readFile(pickedFile(),function(media){clearFile();fn(media);});
-}
+function withPick(fn){readFile(pickedFile(),function(media){clearFile();fn(media);});}
 window.poshChatPrompt=function(){
   if(!user){alert("Sign in first");return;}
   var open=roots();
@@ -172,12 +158,12 @@ window.poshChatPrompt=function(){
     }
   }
   var opts=people();
-  var pick=prompt(["1 = location","2 = hotel"].concat(opts.map(function(u,i){return (i+3)+" = "+u.name;})).join("\n"),"1");
+  var pick=prompt(opts.map(function(u,i){return (i+1)+" = "+u.name;}).join("\n")||"No staff","1");
   if(pick===null)return;
-  var n=parseInt(pick,10),channel="site",toId="";
-  if(n===2)channel="hotel";else if(n>=3&&opts[n-3]){channel="dm";toId=opts[n-3].id;}
+  var n=parseInt(pick,10),toId="";
+  if(n>=1&&opts[n-1])toId=opts[n-1].id;
   var text=prompt("First message (or leave blank if attaching)")||"";
-  withPick(function(media){window.poshSendChat(text,channel,toId,media);});
+  withPick(function(media){window.poshSendChat(text,"dm",toId,media);});
 };
 function box(){
   if(!user)return "";
@@ -191,8 +177,8 @@ function box(){
     }).join("");
     return "<div class=card><p><b>"+m.by+"</b> · "+where+(isUnread(m)?" <b>UNREAD</b>":"")+"<br>"+m.text+"</p>"+mediaHtml(m)+"<p><small>"+m.at+"</small></p>"+thread+"<p>"+receiptLine(m)+"</p><p><button type=button class=chatPerson data-id='"+m.id+"'>Reply to person</button> <button type=button class=chatAll data-id='"+m.id+"'>Reply to all</button></p></div>";
   }).join("");
-  return "<div class=card id=staffChat><h3>Staff dialogue</h3><p>"+(audit?"CEO / Super Admin audit is on. You see every private chat and every reply-to-person, all locations.":(unread?("<b>"+unread+" unread</b>"):"No unread loops"))+". Any role can attach a photo, video or file.</p>"+
-    "<p>Start with</p><select id=chatTo><option value='site'>This location</option><option value='hotel'>Whole hotel</option>"+opts+"</select>"+
+  return "<div class=card id=staffChat><h3>Staff dialogue</h3><p>"+(audit?"CEO audit is on. Only the CEO sees every private chat.":(unread?("<b>"+unread+" unread</b> · your chats only"):"You only see chats you sent or received"))+".</p>"+
+    "<p>Start with</p><select id=chatTo>"+(audit?"<option value='site'>This location</option><option value='hotel'>Whole hotel</option>":"<option value=''>Choose a person</option>")+opts+"</select>"+
     "<textarea id=chatText placeholder='Write a message'></textarea>"+
     "<p><input id=chatFile type=file accept='image/*,video/*,.pdf,.doc,.docx' capture='environment'></p>"+
     "<p><button type=button class=btn id=chatSend>Start loop</button></p>"+(cards||"<p>No loops yet.</p>")+"</div>";
@@ -204,7 +190,7 @@ if(!window.__chatClicks){
     if(t.id==="chatSend"){
       ev.preventDefault();
       var text=((document.getElementById("chatText")||{}).value||"").trim();
-      var ch=((document.getElementById("chatTo")||{}).value||"site");
+      var ch=((document.getElementById("chatTo")||{}).value||"");
       withPick(function(media){window.poshSendChat(text,ch==="site"||ch==="hotel"?ch:"dm",ch,media);});
       return;
     }
