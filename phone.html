@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 34P</title>
+<title>Posh Manager 34Q</title>
 <style>
 html,body{margin:0;background:#1c332c;font-family:system-ui}
 #bar{position:sticky;top:0;z-index:20;padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512}
@@ -15,7 +15,7 @@ iframe{display:block;width:100%;border:0;min-height:70vh;height:70vh;background:
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 34P — loading…</span>
+  <span id=msg>POSH MANAGER 34Q — loading…</span>
   <div id=acts>
     <a class=gbtn href="#do-barTok" id=barTok>Save token</a>
     <a class=gbtn href="#do-barPub" id=barPub>Publish</a>
@@ -45,11 +45,11 @@ iframe{display:block;width:100%;border:0;min-height:70vh;height:70vh;background:
     <a class=gbtn href="#do-barWaDm" id=barWaDm>Send video to DM</a>
     <a class=gbtn href="#do-barWaHotel" id=barWaHotel>Send video to hotel DM</a>
   </div>
-  <div id=vidWrap><input id=barVid type=file accept="video/*,video/mp4" capture="environment"></div>
+  <div id=vidWrap><input id=barVid type=file accept="video/mp4,video/*" capture="environment"></div>
 </div>
 <script>
-var V="20260902K"+Date.now(),frame,log=[],hkClip=null;
-var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js","dashfix.js","chat.js","alerts.js","hkflow.js","tapfix.js"];
+var V="20260903A"+Date.now(),frame,log=[],hkClip=null;
+var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js","dashfix.js","chat.js","alerts.js","hkflow.js","tapfix.js","submitfix.js","lockgate.js"];
 var ALL=["barTok","barPub","barPull","barAlert","barChat","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barExtend","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom","barWaDm","barWaHotel"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
@@ -212,6 +212,9 @@ document.getElementById("barFolio").onclick=function(){
   var w=win();if(!w||!w.user||w.user.role!=="frontdesk")return;
   var name=val(w,"cinName"),room=val(w,"cinRoom"),out=val(w,"cinOut");
   if(!name||!room){alert("Fill guest name and room on Desk first");return;}
+  if(w.poshMustBeCertified&&!w.poshMustBeCertified(room))return;
+  var rec=(w.db.rooms||[]).filter(function(x){return String(x.number)===String(room);})[0];
+  if(!rec||rec.status!=="certified"){alert("Only a duty-manager certified room can be assigned or sold.");return;}
   if(!out){alert("Enter checkout date on Desk first");return;}
   if(!w.db.checkins)w.db.checkins=[];
   w.db.checkins.push({id:"c"+Date.now(),guest:name,room:room,amount:num(w,"cinAmt"),checkout:out,checkedOut:false,extended:false,extras:{early:num(w,"cinEarly"),late:num(w,"cinLate"),laundry:num(w,"cinLau"),other:num(w,"cinOth")},debt:num(w,"cinDebt"),site:w.user.site,by:w.user.name,byId:w.user.id,day:w.today(),at:new Date().toLocaleString()});
@@ -237,6 +240,7 @@ document.getElementById("barOOO").onclick=function(){var w=win(),r=openRoom(w);i
 document.getElementById("barVid").onchange=function(){
   var w=win(),f=this.files&&this.files[0],r=hkRoom(w);
   if(!r||!f)return;
+  if(String(f.type||"").indexOf("video")!==0&&!/\.(mp4|mov|webm|m4v)$/i.test(f.name||"")){alert("One walkthrough video only. Photos are not accepted.");return;}
   hkClip=f;r.videoReady=true;
   try{w.save();}catch(e){}
   sendHkWa(allDmNumbers(w));
@@ -259,7 +263,7 @@ function start(){
     FILES.forEach(function(src){chain=chain.then(function(){return loadInto(w,src);});});
     chain.then(function(){
       var bad=log.filter(function(x){return x.indexOf(":ok")<0;});
-      say((bad.length?("34P ERRORS\n"+bad.join("\n")):"34P READY")+" · full page");
+      say((bad.length?("34Q ERRORS\n"+bad.join("\n")):"34Q READY")+" · full page");
       try{w.draw();}catch(e){say("draw crashed: "+e);}
       paintBar();fitFrame();
     });
