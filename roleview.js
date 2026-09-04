@@ -9,7 +9,7 @@ function hideMealsOnly(){
   if(!isHk())return;
   try{
     var d5=document.getElementById("d5");
-    if(d5&&/meal/i.test(d5.textContent||""))d5.style.display="none";
+    if(d5&&String(d5.textContent||"").toLowerCase().indexOf("meal")>=0)d5.style.display="none";
     var d4=document.getElementById("d4");
     if(d4)d4.style.display="";
     var d3=document.getElementById("d3");
@@ -98,7 +98,7 @@ try{draw();}catch(e){}
 if(!window.__cloudLoader){
   window.__cloudLoader=true;
   var s=document.createElement("script");
-  s.src="cloud.js?v=20260904B";
+  s.src="cloud.js?v=20260904C";
   document.head.appendChild(s);
 }
 }
