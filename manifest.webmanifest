@@ -1,10 +1,33 @@
 {
-  "name": "Posh Manager — Posh Hotels & Suites Nigeria",
+  "id": "/",
+  "name": "Posh Manager",
   "short_name": "Posh Manager",
-  "start_url": "./phone.html",
+  "description": "Housekeeping, front desk, laundry and sales for Posh Hotels & Suites Nigeria.",
+  "start_url": "./phone.html?source=pwa",
   "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#1c332c",
   "theme_color": "#c4a574",
-  "icons": []
+  "lang": "en-NG",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
