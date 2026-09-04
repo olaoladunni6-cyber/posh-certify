@@ -56,7 +56,7 @@ draw=function(){
 try{draw();}catch(e){}
 if(!window.__cloudLoader){
   window.__cloudLoader=true;
-  ["cloud.js?v=20260904C","allsites.js?v=20260904D","dockwire.js?v=20260904G"].forEach(function(src){
+  ["cloud.js?v=20260904C","allsites.js?v=20260904D","opsbar.js?v=20260904J"].forEach(function(src){
     var s=document.createElement("script");
     s.src=src;
     document.head.appendChild(s);
