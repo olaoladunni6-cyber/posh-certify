@@ -1,77 +1,50 @@
 (function(){
 function boot(){
 if(typeof db==="undefined"||typeof draw!=="function"){setTimeout(boot,80);return;}
-if(window.__opsBar2)return;window.__opsBar2=true;
+if(window.__opsBar3)return;window.__opsBar3=true;
 function role(){return (user&&user.role)||"";}
 function canAssign(){return role()==="frontdesk"||role()==="superadmin"||role()==="manager";}
 function canFix(){return ["housekeeper","frontdesk","manager","maint","ceo","superadmin"].indexOf(role())>=0;}
-function keepers(){
-  return (db.users||[]).filter(function(u){
-    if(u.role!=="housekeeper")return false;
-    if(role()==="superadmin"||role()==="ceo")return true;
-    return !user.site||user.site==="All locations"||u.site===user.site;
-  });
+function openR(){
+  if(roomId)return (db.rooms||[]).filter(function(x){return x.id===roomId;})[0]||null;
+  return null;
 }
-function roomsHere(){
-  return (db.rooms||[]).filter(function(r){
-    if(role()==="superadmin"||role()==="ceo")return true;
-    return !user.site||user.site==="All locations"||r.site===user.site;
-  });
-}
-window.poshAssignRoom=function(){
-  if(!user){alert("Sign in first");return;}
-  if(!canAssign()){alert("Only Front Desk, duty manager or Super Admin can allocate rooms.");return;}
-  var list=roomsHere();
-  if(!list.length){alert("No rooms at this location.");return;}
-  var nums=list.map(function(r){return r.number;}).join(", ");
-  var num=prompt("Room number to allocate\n"+nums);
-  if(!num)return;
-  var r=list.filter(function(x){return String(x.number)===String(num).trim();})[0];
-  if(!r){alert("Room not found at this location.");return;}
-  if(r.status==="certified"){alert("Certified rooms stay closed. Return to service first if the housekeeper must clean again.");return;}
-  var hks=keepers();
-  if(!hks.length){alert("No housekeeper at this location.");return;}
-  var names=hks.map(function(u,i){return (i+1)+". "+u.name;}).join("\n");
-  var pick=prompt("Housekeeper number:\n"+names,"1");
-  if(!pick)return;
-  var hk=hks[parseInt(pick,10)-1]||hks.filter(function(u){return u.name===pick;})[0];
-  if(!hk){alert("Pick a number from the list.");return;}
-  var job=prompt("Job type: checkout / inhouse / postmaint / spring","checkout");
-  if(!job)return;
-  job=String(job).toLowerCase().replace(/\s+/g,"");
-  if(job.indexOf("in")===0)job="inhouse";
-  if(job.indexOf("post")===0)job="postmaint";
-  if(job.indexOf("spring")===0)job="spring";
-  if(job!=="checkout"&&job!=="inhouse"&&job!=="postmaint"&&job!=="spring")job="checkout";
-  r.hk=hk.id;r.hkName=hk.name;r.job=job;r.status="pending";r.locked=false;r.videoReady=false;r.checklistDone=false;r.laundryChecked=false;
+window.poshClockIn=function(){
+  if(!user||role()!=="frontdesk"){alert("Front Desk only");return;}
+  if(!db.clocks)db.clocks=[];
+  db.clocks.push({id:"ck"+Date.now(),day:(typeof today==="function"?today():""),site:user.site,by:user.name,byId:user.id,inAt:new Date().toLocaleTimeString(),outAt:""});
   try{save();}catch(e){}
-  try{draw();}catch(e){}
-  alert("Rm "+r.number+" assigned to "+hk.name+" ("+job+").");
+  alert("Clocked in "+new Date().toLocaleTimeString());
 };
-window.poshOpenFix=function(){
-  if(!user){alert("Sign in first");return;}
-  tab="issues";roomId=null;
-  try{draw();}catch(e){}
-  var room=prompt("Room number for this fault (or leave blank)","");
-  var fault=prompt("What is the fault?","");
-  if(!fault)return;
-  if(!db.issues)db.issues=[];
-  db.issues.push({
-    id:"i"+Date.now(),
-    room:String(room||"").trim(),
-    site:user.site||"",
-    fault:String(fault).trim(),
-    by:user.name,
-    openedAt:Date.now(),
-    openedDay:(typeof today==="function"?today():new Date().toISOString().slice(0,10)),
-    deadlineAt:Date.now()+6*60*60*1000,
-    status:"received",
-    cert:"",
-    penalty:0
-  });
+window.poshCertify=function(){
+  if(role()!=="manager"&&role()!=="superadmin"){alert("Duty manager only");return;}
+  var r=openR();
+  if(!r){alert("Open the submitted room first from Rooms.");return;}
+  if(r.status!=="submitted"&&r.status!=="pending"){alert("Housekeeper must submit first. Status now: "+(r.status||""));return;}
+  r.status="certified";r.locked=true;r.certifiedAt=new Date().toLocaleString();r.certifiedBy=user.name;
   try{save();}catch(e){}
   try{draw();}catch(e){}
-  alert("Fault logged. Maintenance and duty manager can see it after Refresh.");
+  alert("Rm "+r.number+" certified. Front Desk can sell after Refresh.");
+};
+window.poshReturnSvc=function(){
+  if(role()!=="manager"&&role()!=="superadmin")return;
+  var r=openR();
+  if(!r){alert("Open the room first");return;}
+  var note=prompt("What should the housekeeper do?","Spring clean");
+  if(note===null)return;
+  r.status="pending";r.job="inservice";r.hkNote=String(note).trim();r.videoReady=false;r.locked=false;r.checklistDone=false;
+  try{save();}catch(e){}
+  try{draw();}catch(e){}
+  alert("Returned to service. Housekeeper must video and submit again.");
+};
+window.poshSetOOO=function(){
+  if(role()!=="manager"&&role()!=="superadmin"&&role()!=="maint")return;
+  var r=openR();
+  if(!r){alert("Open the room first");return;}
+  r.status="ooo";r.locked=true;
+  try{save();}catch(e){}
+  try{draw();}catch(e){}
+  alert("Rm "+r.number+" is OOO.");
 };
 function go(tabName){
   if(!user){alert("Sign in first");return;}
@@ -83,22 +56,31 @@ function bar(){
   if(!el){
     el=document.createElement("div");
     el.id="opsBar";
-    el.style.cssText="position:sticky;top:0;z-index:90;background:#c4a574;padding:8px;font-weight:700";
     var wrap=document.querySelector(".wrap")||document.body;
     wrap.insertBefore(el,wrap.firstChild);
   }
-  if(!user){el.innerHTML="<span>Sign in</span>";return;}
-  var html="<button type=button class=btn id=obRooms>Rooms</button> ";
+  el.style.cssText="position:sticky;top:0;z-index:120;background:#101512;color:#f3e6c5;padding:12px 10px 14px;font-weight:800;font-size:15px;border-bottom:4px solid #c4a574";
+  if(!user){el.innerHTML="<div>POSH MENU — sign in</div>";return;}
+  var r=openR();
+  var html="<div style='margin-bottom:8px'>POSH MENU · "+user.name+(r?(" · Rm "+r.number+" "+r.status):"")+"</div>";
+  html+="<button type=button class=btn id=obRooms>Rooms</button> ";
   if(role()!=="housekeeper")html+="<button type=button class=btn id=obDesk>Desk</button> ";
   html+="<button type=button class=btn id=obStaff>Staff</button> ";
   if(role()!=="housekeeper")html+="<button type=button class=btn id=obMeals>Meals</button> ";
   html+="<button type=button class=btn id=obMe>Me</button>";
   if(canFix())html+=" <button type=button class=btn id=obFix>Fix</button>";
   if(canAssign())html+=" <button type=button class=btn id=obAssign>Assign room</button>";
+  if(role()==="frontdesk")html+=" <button type=button class=btn id=obClock>Clock in</button>";
+  if(role()==="manager"||role()==="superadmin")html+=" <button type=button class=btn id=obCert>Certify</button> <button type=button class=btn id=obSvc>Return to service</button> <button type=button class=btn id=obOOO>Set OOO</button>";
+  if(role()==="maint")html+=" <button type=button class=btn id=obOOO>Set OOO</button>";
+  html+=" <button type=button class=btn id=obPull>Refresh now</button>";
   el.innerHTML=html;
+  var st=document.getElementById("opsBarCss");
+  if(!st){st=document.createElement("style");st.id="opsBarCss";document.head.appendChild(st);}
+  st.textContent="#opsBar .btn{background:#c4a574;color:#101512;border:0;border-radius:999px;padding:10px 14px;margin:0 6px 8px 0;font-weight:800;min-height:44px}";
 }
-if(!window.__opsClicks2){
-  window.__opsClicks2=true;
+if(!window.__opsClicks3){
+  window.__opsClicks3=true;
   document.addEventListener("click",function(ev){
     var id=ev.target&&ev.target.id;
     if(id==="obRooms")go("rooms");
@@ -106,8 +88,16 @@ if(!window.__opsClicks2){
     else if(id==="obStaff")go("staff");
     else if(id==="obMeals")go("meals");
     else if(id==="obMe")go("me");
-    else if(id==="obAssign")window.poshAssignRoom();
-    else if(id==="obFix")window.poshOpenFix();
+    else if(id==="obAssign"&&window.poshAssignRoom)window.poshAssignRoom();
+    else if(id==="obFix"&&window.poshOpenFix)window.poshOpenFix();
+    else if(id==="obClock")window.poshClockIn();
+    else if(id==="obCert")window.poshCertify();
+    else if(id==="obSvc")window.poshReturnSvc();
+    else if(id==="obOOO")window.poshSetOOO();
+    else if(id==="obPull"){
+      if(typeof refreshHotel==="function")refreshHotel(function(ok){alert(ok?"Refreshed":"Could not refresh");});
+      else try{draw();}catch(e){}
+    }
   },true);
 }
 var _d=draw;
