@@ -2,8 +2,16 @@
 <html lang="en-NG">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Posh Manager 34R</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#c4a574">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Posh Manager">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon.svg">
+<title>Posh Manager</title>
 <style>
 html,body{margin:0;background:#1c332c;font-family:system-ui}
 #bar{position:sticky;top:0;z-index:20;padding:10px;font-size:13px;font-weight:700;background:#c4a574;color:#101512}
@@ -15,12 +23,13 @@ iframe{display:block;width:100%;border:0;min-height:70vh;height:70vh;background:
 </head>
 <body>
 <div id=bar>
-  <span id=msg>POSH MANAGER 34R — loading…</span>
+  <span id=msg>POSH MANAGER — loading…</span>
   <div id=acts>
     <a class=gbtn href="#do-barTok" id=barTok>Save token</a>
     <a class=gbtn href="#do-barPub" id=barPub>Publish</a>
     <a class=gbtn href="#do-barPull" id=barPull>Refresh</a>
     <a class=gbtn href="#do-barAlert" id=barAlert>Allow phone alerts</a>
+    <a class=gbtn href="#do-barInstall" id=barInstall>Install app</a>
     <a class=gbtn href="#do-barChat" id=barChat>Staff chat</a>
     <a class=gbtn href="#do-barQuery" id=barQuery>Query sales</a>
     <a class=gbtn href="#do-barReply" id=barReply>Reply to query</a>
@@ -48,9 +57,9 @@ iframe{display:block;width:100%;border:0;min-height:70vh;height:70vh;background:
   <div id=vidWrap><input id=barVid type=file accept="video/mp4,video/*" capture="environment"></div>
 </div>
 <script>
-var V="20260903B"+Date.now(),frame,log=[],hkClip=null;
+var V="20260904A"+Date.now(),frame,log=[],hkClip=null;
 var FILES=["desk.js","minimart.js","salesq.js","acctquery.js","debtbox.js","fdclock.js","fdguard.js","hkfix.js","hknote.js","hkresub.js","clock.js","loss.js","fixtures.js","evidence.js","wahotel.js","statuswa.js","sync.js","martfix.js","dashfix.js","chat.js","alerts.js","hkflow.js","tapfix.js","submitfix.js","lockgate.js","roleview.js"];
-var ALL=["barTok","barPub","barPull","barAlert","barChat","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barExtend","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom","barWaDm","barWaHotel"];
+var ALL=["barTok","barPub","barPull","barAlert","barInstall","barChat","barQuery","barReply","barMartSell","barMartIn","barMartItem","barIn","barOpen","barClose","barFolio","barExtend","barShift","barAck","barCert","barSvc","barOOO","barFix","barMaint","barSaveCnt","barLaundry","barSendRoom","barWaDm","barWaHotel"];
 function win(){return frame&&frame.contentWindow;}
 function say(t){document.getElementById("msg").textContent=t;}
 function fitFrame(){if(!frame)return;var h=Math.max((window.innerHeight||700)-((document.getElementById("bar")||{}).offsetHeight||120)-12,520);frame.style.position="static";frame.style.height=h+"px";frame.style.minHeight=h+"px";}
@@ -78,7 +87,7 @@ function paintBar(){
   if(key===lastPaint){fitFrame();return;}lastPaint=key;
   ALL.forEach(function(id){show(id,false);});
   document.getElementById("vidWrap").className="";
-  show("barTok",true);show("barPub",true);show("barPull",true);show("barAlert",true);
+  show("barTok",true);show("barPub",true);show("barPull",true);show("barAlert",true);show("barInstall",true);
   if(!w||!w.user){fitFrame();return;}hidePageBtns(w);var r=openRoom(w);show("barChat",true);
   if(role==="housekeeper"){show("barSaveCnt",true);show("barLaundry",true);show("barSendRoom",true);show("barFix",true);show("barMaint",true);show("barWaDm",true);show("barWaHotel",true);document.getElementById("vidWrap").className="on";say("Housekeeper");}
   else if(role==="frontdesk"){show("barIn",true);show("barOpen",true);show("barClose",true);show("barFolio",true);show("barExtend",true);show("barMartSell",true);show("barMartIn",true);show("barMartItem",true);show("barShift",true);show("barFix",true);show("barMaint",true);show("barReply",true);say("Front Desk");}
@@ -91,7 +100,19 @@ function paintBar(){
 setInterval(paintBar,800);
 window.addEventListener("resize",fitFrame);
 window.addEventListener("hashchange",function(){var id=(location.hash||"").replace("#do-","");if(!id)return;try{history.replaceState(null,"",location.pathname+location.search);}catch(e){location.hash="";}var el=document.getElementById(id);if(el&&typeof el.onclick==="function")el.onclick();});
+var deferredInstall=null;
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferredInstall=e;});
+function isStandalone(){return window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;}
+function installApp(){
+  if(isStandalone()){alert("Posh Manager is already on this phone.");return;}
+  if(deferredInstall){deferredInstall.prompt();deferredInstall.userChoice.then(function(){deferredInstall=null;});return;}
+  var ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(ios)alert("iPhone / iPad\n\n1. Open this page in Safari (not Chrome).\n2. Tap Share (square with arrow).\n3. Tap Add to Home Screen.\n4. Tap Add.\n\nThen open Posh Manager from the new icon.");
+  else alert("Android\n\n1. Tap the Chrome menu (three dots).\n2. Tap Install app or Add to Home screen.\n3. Tap Install.\n\nThen open Posh Manager from the new icon.");
+}
+if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(function(){});}
 document.getElementById("barAlert").onclick=askAlerts;
+document.getElementById("barInstall").onclick=installApp;
 document.getElementById("barChat").onclick=function(){var w=win();if(w&&w.poshChatPrompt)w.poshChatPrompt();else alert("Sign in first");};
 document.getElementById("barMartSell").onclick=function(){callMart("poshMartSell","Sell mini mart");};
 document.getElementById("barMartIn").onclick=function(){callMart("poshMartReceive","Receive mini mart");};
@@ -131,7 +152,7 @@ document.getElementById("barOpen").onclick=function(){var w=win();var items=w.po
 document.getElementById("barClose").onclick=function(){var w=win();var items=w.poshCollectClose?w.poshCollectClose():[];if(!items.length){alert("Tick the closing checklist on Desk first.");return;}if(!w.db.fdChecks)w.db.fdChecks=[];w.db.fdChecks.push({id:"fc"+Date.now(),day:w.today(),site:w.user.site,kind:"close",by:w.user.name,byId:w.user.id,items:items,note:w.poshCloseNote?w.poshCloseNote():"",at:new Date().toLocaleString(),seen:false,seenBy:""});try{w.save();}catch(e){}try{w.draw();}catch(e){}alert("Closing sent");};
 document.getElementById("barAck").onclick=function(){var w=win();(w.db.fdChecks||[]).forEach(function(c){c.seen=true;c.seenBy=w.user.name;});try{w.save();}catch(e){}alert("Acknowledged");};
 document.getElementById("barMaint").onclick=function(){var w=win();if(!w||!w.user)return;var room=(openRoom(w)||{}).number||prompt("Room?");if(!room)return;var detail=prompt("Fault?");if(!detail)return;if(!w.db.issues)w.db.issues=[];w.db.issues.push({id:"is"+Date.now(),room:String(room),site:w.user.site,by:w.user.name,detail:String(detail).trim(),fault:String(detail).trim(),status:"received",day:w.today(),at:new Date().toLocaleString()});try{w.save();}catch(e){}alert("Sent to maintenance");};
-function start(){frame=document.createElement("iframe");frame.src="app.html?v="+V;frame.onload=function(){var w=win();hookErrors(w);var chain=Promise.resolve();FILES.forEach(function(src){chain=chain.then(function(){return loadInto(w,src);});});chain.then(function(){var bad=log.filter(function(x){return x.indexOf(":ok")<0;});say((bad.length?("34R ERRORS\n"+bad.join("\n")):"34R READY")+" · full page");try{w.draw();}catch(e){say("draw crashed: "+e);}paintBar();fitFrame();});};document.body.appendChild(frame);}start();
+function start(){frame=document.createElement("iframe");frame.src="app.html?v="+V;frame.onload=function(){var w=win();hookErrors(w);var chain=Promise.resolve();FILES.forEach(function(src){chain=chain.then(function(){return loadInto(w,src);});});chain.then(function(){var bad=log.filter(function(x){return x.indexOf(":ok")<0;});say((bad.length?("35A ERRORS\n"+bad.join("\n")):"35A READY")+" · full page");try{w.draw();}catch(e){say("draw crashed: "+e);}paintBar();fitFrame();});};document.body.appendChild(frame);}start();
 </script>
 </body>
 </html>
