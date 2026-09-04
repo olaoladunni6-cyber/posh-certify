@@ -97,9 +97,11 @@ draw=function(){
 try{draw();}catch(e){}
 if(!window.__cloudLoader){
   window.__cloudLoader=true;
-  var s=document.createElement("script");
-  s.src="cloud.js?v=20260904C";
-  document.head.appendChild(s);
+  ["cloud.js?v=20260904C","allsites.js?v=20260904D"].forEach(function(src){
+    var s=document.createElement("script");
+    s.src=src;
+    document.head.appendChild(s);
+  });
 }
 }
 boot();
