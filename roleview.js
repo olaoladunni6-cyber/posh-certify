@@ -95,6 +95,12 @@ draw=function(){
   return out;
 };
 try{draw();}catch(e){}
+if(!window.__cloudLoader){
+  window.__cloudLoader=true;
+  var s=document.createElement("script");
+  s.src="cloud.js?v=20260904B";
+  document.head.appendChild(s);
+}
 }
 boot();
 })();
