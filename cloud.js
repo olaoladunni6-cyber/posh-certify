@@ -9,9 +9,14 @@ var client=null;
 var pushing=false;
 var lastPush=0;
 var applying=false;
-function cfgUrl(){return (localStorage.getItem(URL_KEY)||"").trim().replace(/\/$,"");}
+function trimSlash(s){s=String(s||"").trim();while(s.charAt(s.length-1)==="/")s=s.slice(0,-1);return s;}
+function cfgUrl(){return trimSlash(localStorage.getItem(URL_KEY)||"");}
 function cfgKey(){return (localStorage.getItem(KEY_KEY)||"").trim();}
-function configured(){return !!(cfgUrl()&&cfgKey()&&/^https:\/\/.+\.supabase\.co$/.test(cfgUrl()));}
+function goodUrl(u){
+  u=trimSlash(u).toLowerCase();
+  return u.indexOf("https://")===0 && u.indexOf(".supabase.co")===u.length-12;
+}
+function configured(){return !!(goodUrl(cfgUrl())&&cfgKey().length>20);}
 function ready(){return !!(configured()&&client);}
 function loadSdk(done){
   if(window.supabase&&window.supabase.createClient){done(true);return;}
@@ -49,7 +54,7 @@ function applyPayload(x){
   return true;
 }
 window.poshCloudPush=function(done){
-  if(!ready()){if(done)done(false,"Cloud not connected. Super Admin must paste the two keys.");return;}
+  if(!ready()){if(done)done(false,"Cloud not connected.");return;}
   if(pushing){if(done)done(false,"Busy");return;}
   pushing=true;lastPush=Date.now();
   var payload=slim(db);
@@ -103,10 +108,10 @@ function box(){
   if(!user)return "";
   var admin=user.role==="superadmin"||user.role==="ceo";
   var on=ready();
-  var html="<div class=card id=cloudBox><h3>Live hotel cloud</h3><p>"+(on?"Connected. Saves go to every signed-in phone without GitHub Publish.":"Not connected. Super Admin pastes the two keys once.")+"</p>";
+  var html="<div class=card id=cloudBox><h3>Live hotel cloud</h3><p>"+(on?"Connected.":"Not connected. Super Admin pastes the two keys once.")+"</p>";
   if(admin){
     html+="<p>Project URL</p><input id=sbUrl placeholder='https://xxxx.supabase.co' value='"+cfgUrl()+"'>"+
-      "<p>Anon / publishable key</p><input id=sbKey type=password placeholder='eyJ... or sb_publishable_...' value='"+cfgKey()+"'>"+
+      "<p>Anon key</p><input id=sbKey type=password placeholder='paste key' value='"+cfgKey()+"'>"+
       "<p><button type=button class=btn id=sbSave>Save cloud keys</button> <button type=button class=btn id=sbTest>Test connection</button></p>";
   }
   html+="<p><button type=button class=btn id=sbPull>Refresh live</button> <button type=button class=btn id=sbPush>Publish live</button></p></div>";
@@ -126,14 +131,14 @@ if(!window.__cloudClicks){
     var t=ev.target;if(!t)return;
     if(t.id==="sbSave"){
       ev.preventDefault();
-      var u=((document.getElementById("sbUrl")||{}).value||"").trim();
+      var u=trimSlash(((document.getElementById("sbUrl")||{}).value||""));
       var k=((document.getElementById("sbKey")||{}).value||"").trim();
-      if(!/^https:\/\/.+\.supabase\.co$/.test(u.replace(/\/$/,""))){alert("URL must look like https://xxxx.supabase.co");return;}
-      if(k.length<20){alert("Paste the anon / publishable key");return;}
-      localStorage.setItem(URL_KEY,u.replace(/\/$/,""));
+      if(!goodUrl(u)){alert("URL must look like https://xxxx.supabase.co");return;}
+      if(k.length<20){alert("Paste the anon key");return;}
+      localStorage.setItem(URL_KEY,u);
       localStorage.setItem(KEY_KEY,k);
       connect();
-      alert("Keys saved on this phone. Tap Test connection, then Publish live. Other phones need the same two keys once.");
+      alert("Keys saved. Tap Test connection, then Publish live.");
       try{draw();}catch(e){}
       return;
     }
@@ -141,7 +146,7 @@ if(!window.__cloudClicks){
       ev.preventDefault();
       if(!ready()){alert("Save the keys first");return;}
       client.from("hotel_live").select("id").eq("id",ROW).maybeSingle().then(function(res){
-        if(res.error)alert("Connected to Supabase but table missing.\nRun SETUP-CLOUD.sql in the SQL editor.\n\n"+res.error.message);
+        if(res.error)alert("Table missing. Run the SQL first.\n"+res.error.message);
         else alert("Cloud is live.");
       });
       return;
