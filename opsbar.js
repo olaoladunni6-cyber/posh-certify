@@ -1,9 +1,10 @@
 (function(){
 function boot(){
 if(typeof db==="undefined"||typeof draw!=="function"){setTimeout(boot,80);return;}
-if(window.__opsBar)return;window.__opsBar=true;
+if(window.__opsBar2)return;window.__opsBar2=true;
 function role(){return (user&&user.role)||"";}
 function canAssign(){return role()==="frontdesk"||role()==="superadmin"||role()==="manager";}
+function canFix(){return ["housekeeper","frontdesk","manager","maint","ceo","superadmin"].indexOf(role())>=0;}
 function keepers(){
   return (db.users||[]).filter(function(u){
     if(u.role!=="housekeeper")return false;
@@ -45,7 +46,32 @@ window.poshAssignRoom=function(){
   r.hk=hk.id;r.hkName=hk.name;r.job=job;r.status="pending";r.locked=false;r.videoReady=false;r.checklistDone=false;r.laundryChecked=false;
   try{save();}catch(e){}
   try{draw();}catch(e){}
-  alert("Rm "+r.number+" assigned to "+hk.name+" ("+job+"). Publish / live save so the housekeeper can Refresh.");
+  alert("Rm "+r.number+" assigned to "+hk.name+" ("+job+").");
+};
+window.poshOpenFix=function(){
+  if(!user){alert("Sign in first");return;}
+  tab="issues";roomId=null;
+  try{draw();}catch(e){}
+  var room=prompt("Room number for this fault (or leave blank)","");
+  var fault=prompt("What is the fault?","");
+  if(!fault)return;
+  if(!db.issues)db.issues=[];
+  db.issues.push({
+    id:"i"+Date.now(),
+    room:String(room||"").trim(),
+    site:user.site||"",
+    fault:String(fault).trim(),
+    by:user.name,
+    openedAt:Date.now(),
+    openedDay:(typeof today==="function"?today():new Date().toISOString().slice(0,10)),
+    deadlineAt:Date.now()+6*60*60*1000,
+    status:"received",
+    cert:"",
+    penalty:0
+  });
+  try{save();}catch(e){}
+  try{draw();}catch(e){}
+  alert("Fault logged. Maintenance and duty manager can see it after Refresh.");
 };
 function go(tabName){
   if(!user){alert("Sign in first");return;}
@@ -67,11 +93,12 @@ function bar(){
   html+="<button type=button class=btn id=obStaff>Staff</button> ";
   if(role()!=="housekeeper")html+="<button type=button class=btn id=obMeals>Meals</button> ";
   html+="<button type=button class=btn id=obMe>Me</button>";
+  if(canFix())html+=" <button type=button class=btn id=obFix>Fix</button>";
   if(canAssign())html+=" <button type=button class=btn id=obAssign>Assign room</button>";
   el.innerHTML=html;
 }
-if(!window.__opsClicks){
-  window.__opsClicks=true;
+if(!window.__opsClicks2){
+  window.__opsClicks2=true;
   document.addEventListener("click",function(ev){
     var id=ev.target&&ev.target.id;
     if(id==="obRooms")go("rooms");
@@ -80,6 +107,7 @@ if(!window.__opsClicks){
     else if(id==="obMeals")go("meals");
     else if(id==="obMe")go("me");
     else if(id==="obAssign")window.poshAssignRoom();
+    else if(id==="obFix")window.poshOpenFix();
   },true);
 }
 var _d=draw;
