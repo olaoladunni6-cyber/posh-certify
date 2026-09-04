@@ -32,12 +32,12 @@ if(typeof viewBoard==="function"){
     var list=(db.rooms||[]).filter(function(r){
       if(user&&user.site&&r.site&&r.site!==user.site)return false;
       if(locked(r))return false;
-      return !r.hk||r.hk===user.id||r.hk===user.name;
+      return r.hk===user.id||r.hk===user.name||r.hkName===user.name;
     });
     var cards=list.map(function(r){
-      return "<div class=room data-id='"+r.id+"'><b>"+r.number+"</b> "+(r.type||"")+"<br>"+(r.site||"")+" · "+(r.status||"pending")+"<br><button type=button class='btn open' data-id='"+r.id+"'>Open</button></div>";
+      return "<div class=room data-id='"+r.id+"'><b>Rm "+r.number+"</b> "+(r.job||"")+"<br>"+(r.site||"")+" · "+(r.status||"pending")+"<br><button type=button class='btn open' data-id='"+r.id+"'>Open</button></div>";
     }).join("");
-    if(!cards)cards="<div class=warn>No rooms on your board yet.</div>";
+    if(!cards)cards="<div class=warn>No room assigned to you yet.</div>";
     return "<h1>My rooms</h1>"+cards;
   };
 }
@@ -56,7 +56,7 @@ draw=function(){
 try{draw();}catch(e){}
 if(!window.__cloudLoader){
   window.__cloudLoader=true;
-  ["cloud.js?v=20260904C","allsites.js?v=20260904D","opsbar.js?v=20260904K"].forEach(function(src){
+  ["cloud.js?v=20260904C","allsites.js?v=20260904D","opsbar.js?v=20260904K","hkpanel.js?v=20260904L"].forEach(function(src){
     var s=document.createElement("script");
     s.src=src;
     document.head.appendChild(s);
