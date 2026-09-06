@@ -1,63 +1,82 @@
 (function(){
+  var TOPIC=localStorage.getItem("posh-ntfy")||"posh-hospitalita-live";
+  var sent={};
   function perm(){ return (typeof Notification!=="undefined") ? Notification.permission : "unsupported"; }
   function ping(title,body){
     try{
-      if(typeof Notification==="undefined") return;
-      if(Notification.permission!=="granted") return;
-      new Notification(title,{body:body||"Posh Manager",tag:title});
+      if(typeof Notification!=="undefined" && Notification.permission==="granted"){
+        new Notification(title,{body:body||"Posh Manager",tag:title});
+      }
     }catch(e){}
   }
-  window.poshAlert=ping;
+  function pushOut(title,body,key){
+    if(key){ if(sent[key]) return; sent[key]=1; }
+    ping(title,body);
+    try{
+      fetch("https://ntfy.sh/"+encodeURIComponent(TOPIC),{
+        method:"POST",
+        headers:{"Title":title,"Tags":"bell,hotel","Priority":"high"},
+        body:body||title
+      });
+    }catch(e){}
+  }
+  window.poshAlert=function(t,b){ pushOut(t,b); };
   function box(){
     var p=perm();
-    var st=p==="granted"?"ON":(p==="denied"?"BLOCKED in phone settings":(p==="unsupported"?"This browser cannot alert":"OFF — tap Allow"));
-    return "<div class=card id=alertBox style='background:#f3e6c5'><h2>Phone alerts</h2><p>Status: <b>"+st+"</b></p><button type=button class=btn id=allowAlerts>Allow phone alerts</button><button type=button class=btn id=testAlert>Test alert</button><p>Duty manager: room submitted. Front desk: laundry ready. Kitchen: new breakfast code issued. Chat: new message.</p></div>";
+    var st=p==="granted"?"browser ON":(p==="denied"?"browser BLOCKED":"browser off");
+    return "<div class=card id=alertBox style='background:#f3e6c5'><h2>Phone alerts</h2>"+
+      "<p>On-page banner: <b>"+st+"</b></p>"+
+      "<p>Always-on push topic: <b>"+TOPIC+"</b></p>"+
+      "<button type=button class=btn id=allowAlerts>Allow on-page alerts</button> "+
+      "<button type=button class=btn id=testAlert>Test both</button>"+
+      "<p class=ok>For alerts when this page is closed: install the free <b>ntfy</b> app, tap Subscribe, topic <b>"+TOPIC+"</b>. Same topic on every staff phone.</p>"+
+      "<input id=ntfyTopic placeholder='Change topic if you want privacy' value='"+TOPIC+"'><button type=button class=btn id=saveTopic>Save topic</button></div>";
   }
   function inject(){
     var app=document.getElementById("app");
-    if(!app||!USER||document.getElementById("alertBox")) return;
-    if(TAB!=="me" && role()!=="superadmin" && role()!=="ceo" && role()!=="manager" && role()!=="frontdesk") return;
-    if(TAB!=="me" && role()!=="superadmin" && role()!=="ceo") {
-      /* still show on Me always */
-    }
-    if(TAB!=="me") return;
+    if(!app||!USER||TAB!=="me"||document.getElementById("alertBox")) return;
     app.insertAdjacentHTML("afterbegin", box());
     var a=document.getElementById("allowAlerts");
     if(a) a.onclick=function(){
-      if(typeof Notification==="undefined"){ alert("Use Safari or Chrome and Add to Home Screen"); return; }
-      Notification.requestPermission().then(function(p){
-        alert(p==="granted"?"Alerts on for this phone":"Permission: "+p);
-        draw();
-      });
+      if(typeof Notification==="undefined"){ alert("Use Chrome or Safari"); return; }
+      Notification.requestPermission().then(function(){ draw(); });
+      if(navigator.serviceWorker) navigator.serviceWorker.register("sw.js");
     };
     var t=document.getElementById("testAlert");
-    if(t) t.onclick=function(){ ping("Posh Manager","Test alert on this phone"); alert("If nothing popped up, tap Allow first or check Silent mode."); };
+    if(t) t.onclick=function(){ pushOut("Posh Manager","Test push — if ntfy is subscribed this arrives with the page closed"); };
+    var s=document.getElementById("saveTopic");
+    if(s) s.onclick=function(){
+      TOPIC=(document.getElementById("ntfyTopic").value||"").trim()||TOPIC;
+      localStorage.setItem("posh-ntfy",TOPIC);
+      alert("Topic saved: "+TOPIC);
+      draw();
+    };
   }
   var seen={};
   function watch(){
     if(!DB||!USER) return;
     (DB.rooms||[]).forEach(function(r){
-      var k="rm"+r.id+r.status;
-      if(seen[k]) return; seen[k]=1;
-      if(r.status==="submitted" && (role()==="manager"||role()==="ceo"||role()==="superadmin")) ping("Room submitted","Rm "+r.number+" needs certification");
-      if(r.status==="certified" && role()==="frontdesk") ping("Room certified","Rm "+r.number+" ready to sell");
-      if(r.status==="ooo" && role()==="frontdesk") ping("OOO","Rm "+r.number+" out of order");
+      var k="rm"+r.id+r.status; if(seen[k]) return; seen[k]=1;
+      if(r.status==="submitted") pushOut("Room submitted","Rm "+r.number+" needs certification",k);
+      if(r.status==="certified") pushOut("Room certified","Rm "+r.number+" ready to sell",k);
+      if(r.status==="ooo") pushOut("OOO","Rm "+r.number+" out of order",k);
     });
     (DB.guestWashes||[]).forEach(function(w){
       var k="w"+w.id+w.status; if(seen[k]) return; seen[k]=1;
-      if(w.status==="ready" && role()==="frontdesk") ping("Laundry ready",w.guest+" Rm "+w.room);
-      if(w.status==="sent" && role()==="laundry") ping("Guest laundry in",w.guest+" Rm "+w.room);
+      if(w.status==="ready") pushOut("Laundry ready",w.guest+" Rm "+w.room,k);
+      if(w.status==="sent") pushOut("Guest laundry in",w.guest+" Rm "+w.room,k);
     });
     (DB.slips||[]).forEach(function(s){
       var k="s"+s.id+s.status; if(seen[k]) return; seen[k]=1;
-      if(s.status==="sent" && role()==="laundry") ping("HK linen in","Rm "+s.room+" item slip");
+      if(s.status==="sent") pushOut("HK linen in","Rm "+s.room+" item counts",k);
     });
-    (DB.msgs||[]).slice(-8).forEach(function(m){
-      var k="m"+m.at+m.text; if(seen[k]) return; seen[k]=1;
-      if(m.to===USER.id || (!m.to && m.from!==USER.id)) ping("Message", (m.fromName||"Staff")+": "+(m.text||"").slice(0,80));
+    (DB.msgs||[]).slice(-5).forEach(function(m){
+      var k="m"+(m.at||"")+(m.text||""); if(seen[k]) return; seen[k]=1;
+      if(m.from!== (USER&&USER.id)) pushOut("Message",(m.fromName||"Staff")+": "+String(m.text||"").slice(0,80),k);
     });
   }
   var _draw=window.draw;
-  window.draw=function(){ _draw(); inject(); setTimeout(watch,300); };
-  setInterval(watch,12000);
+  window.draw=function(){ _draw(); inject(); setTimeout(watch,400); };
+  setInterval(watch,15000);
+  try{ if(navigator.serviceWorker) navigator.serviceWorker.register("sw.js"); }catch(e){}
 })();
