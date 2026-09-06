@@ -8,151 +8,95 @@
 .btn.bad{background:#8b2e2e;color:#fff}#app{max-width:560px;margin:0 auto;padding:12px}
 .card,.login{background:#fff;border-radius:14px;padding:12px;margin:0 0 10px}
 input,select,textarea{width:100%;margin:4px 0 8px;padding:10px;border:1px solid #ccc;border-radius:10px}
-.ok{background:#e7f4ea;padding:8px;border-radius:10px}.warn{background:#f8e7c8;padding:8px;border-radius:10px}
+.ok{background:#e7f4ea;padding:8px;border-radius:10px;margin:0 0 8px}.warn{background:#f8e7c8;padding:8px;border-radius:10px;margin:0 0 8px}
 </style></head><body>
 <div id=top><b id=who>Posh Manager Week</b><div id=nav></div></div>
 <div id=app></div>
 <script>
-var KEY="posh-week-v1",TAB="rooms",ROOM=null,USER=null,DB=null;
+var KEY="posh-week-v2",TAB="rooms",ROOM=null,USER=null,DB=null;
 var SITES=["Ikeja","Victoria Island"],JOBS=["checkout","inhouse","postmaint","spring"];
-function uid(p){return p+Date.now()}
-function today(){return new Date().toLocaleDateString("en-CA")}
-function now(){return new Date().toLocaleString()}
-function naira(n){return "NGN "+Number(n||0).toLocaleString()}
-function group(){return USER&&(USER.role==="superadmin"||USER.role==="ceo")}
-function siteOk(s){return !USER||group()||!s||s===USER.site}
-function role(){return USER?USER.role:""}
-function toast(m){alert(m)}
-function seed(){
- return [
-  {id:"admin",name:"Super Admin",role:"superadmin",site:"All locations",pin:"9090"},
-  {id:"dunni",name:"Oladunni Olayanju",role:"ceo",site:"All locations",pin:"2026"},
-  {id:"sophia",name:"Emmanuel Okeleke",role:"manager",site:"Ikeja",pin:"2401"},
-  {id:"kemi",name:"Funmi Ogunnupe",role:"manager",site:"Victoria Island",pin:"2402"},
-  {id:"blessing",name:"Blessing Okoro",role:"housekeeper",site:"Ikeja",pin:"4412"},
-  {id:"tunde",name:"Tunde Balogun",role:"housekeeper",site:"Victoria Island",pin:"5508"},
-  {id:"deska",name:"Collins",role:"frontdesk",site:"Ikeja",pin:"1101"},
-  {id:"deskb",name:"Front Desk Ikeja B",role:"frontdesk",site:"Ikeja",pin:"1102"},
-  {id:"deskvia",name:"Front Desk VI A",role:"frontdesk",site:"Victoria Island",pin:"1103"},
-  {id:"deskvib",name:"Front Desk VI B",role:"frontdesk",site:"Victoria Island",pin:"1104"},
-  {id:"maint",name:"Ibrahim Musa",role:"maint",site:"Ikeja",pin:"3300"},
-  {id:"chinedu",name:"Chinedu Okeke",role:"maint",site:"Victoria Island",pin:"3301"},
-  {id:"store",name:"Yemi Lawal",role:"storekeeper",site:"Ikeja",pin:"8800"},
-  {id:"storevi",name:"Ngozi Eze",role:"storekeeper",site:"Victoria Island",pin:"8801"},
-  {id:"amina",name:"Amina Bello",role:"laundry",site:"Ikeja",pin:"6600"},
-  {id:"laundvi",name:"Laundry VI",role:"laundry",site:"Victoria Island",pin:"6601"},
-  {id:"chef",name:"Chef Ade",role:"kitchen",site:"Ikeja",pin:"7700"},
-  {id:"bisi",name:"Chef Bisi",role:"kitchen",site:"Victoria Island",pin:"7701"},
-  {id:"acctikeja",name:"Accountant Ikeja",role:"accountant",site:"Ikeja",pin:"5501"},
-  {id:"acctvi",name:"Accountant VI",role:"accountant",site:"Victoria Island",pin:"5502"}
- ];
-}
+function uid(p){return p+Date.now()}function today(){return new Date().toLocaleDateString("en-CA")}function now(){return new Date().toLocaleString()}function naira(n){return "NGN "+Number(n||0).toLocaleString()}function group(){return USER&&(USER.role==="superadmin"||USER.role==="ceo")}function siteOk(s){return !USER||group()||!s||s===USER.site}function role(){return USER?USER.role:""}function toast(m){alert(m)}
+function seed(){return [
+ {id:"admin",name:"Super Admin",role:"superadmin",site:"All locations",pin:"9090"},
+ {id:"dunni",name:"Oladunni Olayanju",role:"ceo",site:"All locations",pin:"2026"},
+ {id:"sophia",name:"Emmanuel Okeleke",role:"manager",site:"Ikeja",pin:"2401"},
+ {id:"kemi",name:"Funmi Ogunnupe",role:"manager",site:"Victoria Island",pin:"2402"},
+ {id:"blessing",name:"Blessing Okoro",role:"housekeeper",site:"Ikeja",pin:"4412"},
+ {id:"tunde",name:"Tunde Balogun",role:"housekeeper",site:"Victoria Island",pin:"5508"},
+ {id:"deska",name:"Collins",role:"frontdesk",site:"Ikeja",pin:"1101"},
+ {id:"deskb",name:"Front Desk Ikeja B",role:"frontdesk",site:"Ikeja",pin:"1102"},
+ {id:"deskvia",name:"Front Desk VI A",role:"frontdesk",site:"Victoria Island",pin:"1103"},
+ {id:"deskvib",name:"Front Desk VI B",role:"frontdesk",site:"Victoria Island",pin:"1104"},
+ {id:"maint",name:"Ibrahim Musa",role:"maint",site:"Ikeja",pin:"3300"},
+ {id:"chinedu",name:"Chinedu Okeke",role:"maint",site:"Victoria Island",pin:"3301"},
+ {id:"store",name:"Yemi Lawal",role:"storekeeper",site:"Ikeja",pin:"8800"},
+ {id:"storevi",name:"Ngozi Eze",role:"storekeeper",site:"Victoria Island",pin:"8801"},
+ {id:"amina",name:"Amina Bello",role:"laundry",site:"Ikeja",pin:"6600"},
+ {id:"laundvi",name:"Laundry VI",role:"laundry",site:"Victoria Island",pin:"6601"},
+ {id:"chef",name:"Chef Ade",role:"kitchen",site:"Ikeja",pin:"7700"},
+ {id:"bisi",name:"Chef Bisi",role:"kitchen",site:"Victoria Island",pin:"7701"},
+ {id:"acctikeja",name:"Accountant Ikeja",role:"accountant",site:"Ikeja",pin:"5501"},
+ {id:"acctvi",name:"Accountant VI",role:"accountant",site:"Victoria Island",pin:"5502"}
+]}
 function roomsSeed(){var o=[],i;for(i=301;i<=306;i++)o.push({id:"ik"+i,number:String(i),site:"Ikeja",status:"pending",hk:"",job:"",videoReady:false,check:false,fx:{}});for(i=901;i<=906;i++)o.push({id:"vi"+i,number:String(i),site:"Victoria Island",status:"pending",hk:"",job:"",videoReady:false,check:false,fx:{}});return o}
-function blank(){return {users:seed(),rooms:roomsSeed(),fixtures:[{id:"kettle",name:"Kettle",par:1},{id:"cup",name:"Tea cup",par:2},{id:"glass",name:"Glass",par:2},{id:"remote",name:"TV remote",par:1}],martItems:[{id:"water",name:"Water",price:500},{id:"soda",name:"Soft drink",price:700}],martStock:[{item:"water",site:"Ikeja",qty:20},{item:"soda",site:"Ikeja",qty:10},{item:"water",site:"Victoria Island",qty:20},{item:"soda",site:"Victoria Island",qty:10}],martSales:[],slips:[],issues:[],scores:[],clocks:[],checkins:[],shifts:[],menus:[],breakfasts:[],queries:[],msgs:[],storeMoves:[]}}
-function load(){try{DB=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){DB=null}if(!DB||!DB.users)DB=blank()}
+function blank(){return {users:seed(),rooms:roomsSeed(),fixtures:[{id:"kettle",name:"Kettle",par:1},{id:"cup",name:"Tea cup",par:2},{id:"glass",name:"Glass",par:2},{id:"remote",name:"TV remote",par:1}],martItems:[{id:"water",name:"Water",price:500},{id:"soda",name:"Soft drink",price:700}],martStock:[{item:"water",site:"Ikeja",qty:20},{item:"soda",site:"Ikeja",qty:10},{item:"water",site:"Victoria Island",qty:20},{item:"soda",site:"Victoria Island",qty:10}],martSales:[],slips:[],issues:[],scores:[],clocks:[],checkins:[],shifts:[],menus:[],breakfasts:[],queries:[],msgs:[],storeMoves:[],log:[]}}
+function load(){try{DB=JSON.parse(localStorage.getItem(KEY)||"null")}catch(e){DB=null}if(!DB||!DB.users)DB=blank();if(!DB.log)DB.log=[];if(!DB.martSales)DB.martSales=[];if(!DB.storeMoves)DB.storeMoves=[]}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}}
+function note(t){DB.log.push({at:now(),day:today(),by:USER?USER.name:"",role:role(),site:USER?USER.site:"",text:t});save()}
 function rooms(){return DB.rooms.filter(function(r){return siteOk(r.site)})}
 function hks(){return DB.users.filter(function(u){return u.role==="housekeeper"&&siteOk(u.site)})}
 function findRoom(id){return DB.rooms.filter(function(r){return r.id===id})[0]}
 function byNum(n){return rooms().filter(function(r){return String(r.number)===String(n)})[0]}
-function stock(id,site){var row=DB.martStock.filter(function(s){return s.item===id&&s.site===site})[0];return row?Number(row.qty||0):0}
+function stock(id,site){site=site||(USER&&USER.site)||"Ikeja";var row=DB.martStock.filter(function(s){return s.item===id&&s.site===site})[0];return row?Number(row.qty||0):0}
 function setStock(id,site,q){var row=DB.martStock.filter(function(s){return s.item===id&&s.site===site})[0];if(!row){row={item:id,site:site,qty:0};DB.martStock.push(row)}row.qty=Math.max(0,Number(q)||0)}
-function tabs(){
- var r=role();
- if(r==="housekeeper")return[["rooms","Rooms"],["laundry","Laundry"],["fix","Fix"],["me","Me"]];
- if(r==="frontdesk")return[["desk","Desk"],["rooms","Rooms"],["mart","Mini mart"],["meals","Meals"],["fix","Fix"],["shift","Shift"],["me","Me"]];
- if(r==="manager")return[["rooms","Rooms"],["desk","Sales"],["fix","Fix"],["score","Score HK"],["me","Me"]];
- if(r==="laundry")return[["laundry","Laundry"],["me","Me"]];
- if(r==="kitchen")return[["meals","Kitchen"],["me","Me"]];
- if(r==="maint")return[["fix","Maintenance"],["rooms","Rooms"],["me","Me"]];
- if(r==="storekeeper")return[["store","Store"],["me","Me"]];
- if(r==="accountant")return[["desk","Sales"],["query","Query"],["me","Me"]];
- if(r==="ceo")return[["rooms","Rooms"],["desk","Sales"],["fix","Issues"],["score","HK"],["chat","Chat"],["me","Me"]];
- if(r==="superadmin")return[["staff","Staff"],["rooms","Rooms"],["mart","Mart"],["me","Me"]];
- return[["me","Me"]];
-}
-function draw(){
- document.getElementById("who").textContent=USER?(USER.name+" · "+USER.role+" · "+USER.site):"Posh Manager Week";
- var nav=document.getElementById("nav");nav.innerHTML="";
- tabs().forEach(function(t){var b=document.createElement("button");b.textContent=t[1];b.onclick=function(){TAB=t[0];ROOM=null;draw()};nav.appendChild(b)});
- if(USER){var x=document.createElement("button");x.textContent="Sign out";x.onclick=function(){USER=null;draw()};nav.appendChild(x)}
- var el=document.getElementById("app");
- if(!USER){el.innerHTML=viewLogin();bindLogin();return}
- var map={rooms:viewRooms,desk:viewDesk,mart:viewMart,meals:viewMeals,laundry:viewLaundry,fix:viewFix,score:viewScore,staff:viewStaff,store:viewStore,shift:viewShift,query:viewQuery,chat:viewChat,me:viewMe};
- el.innerHTML=(map[TAB]||viewRooms)();bind();
-}
-function viewLogin(){return "<h1>Posh Manager</h1><p class=ok>Week build. Tap your name, enter PIN.</p>"+DB.users.map(function(u){return "<div class=login data-id='"+u.id+"'><b>"+u.name+"</b><br><small>"+u.role+" · "+u.site+"</small></div>"}).join("")}
+function tabs(){var r=role(),c=["chat","Chat"];
+ if(r==="housekeeper")return[["rooms","Rooms"],["laundry","Laundry"],["fix","Fix"],c,["me","Me"]];
+ if(r==="frontdesk")return[["desk","Desk"],["rooms","Rooms"],["mart","Mini mart"],["meals","Meals"],["fix","Fix"],["shift","Shift"],c,["me","Me"]];
+ if(r==="manager")return[["rooms","Rooms"],["desk","Sales"],["mart","Mart"],["fix","Fix"],["score","Score HK"],["act","Activity"],c,["me","Me"]];
+ if(r==="laundry")return[["laundry","Laundry"],c,["me","Me"]];
+ if(r==="kitchen")return[["meals","Kitchen"],c,["me","Me"]];
+ if(r==="maint")return[["fix","Maintenance"],["rooms","Rooms"],c,["me","Me"]];
+ if(r==="storekeeper")return[["store","Store"],c,["me","Me"]];
+ if(r==="accountant")return[["desk","Sales"],["mart","Mart"],["query","Query"],["act","Activity"],c,["me","Me"]];
+ if(r==="ceo")return[["rooms","Rooms"],["desk","Sales"],["mart","Mart"],["act","Activity"],["fix","Issues"],["score","HK"],c,["me","Me"]];
+ if(r==="superadmin")return[["staff","Staff"],["rooms","Rooms"],["mart","Mart"],["act","Activity"],c,["me","Me"]];
+ return[["me","Me"]]}
+function draw(){document.getElementById("who").textContent=USER?(USER.name+" · "+USER.role+" · "+USER.site):"Posh Manager Week";var nav=document.getElementById("nav");nav.innerHTML="";tabs().forEach(function(t){var b=document.createElement("button");b.textContent=t[1];b.onclick=function(){TAB=t[0];ROOM=null;draw()};nav.appendChild(b)});if(USER){var x=document.createElement("button");x.textContent="Sign out";x.onclick=function(){USER=null;draw()};nav.appendChild(x)}var el=document.getElementById("app");if(!USER){el.innerHTML=viewLogin();bindLogin();return}var map={rooms:viewRooms,desk:viewDesk,mart:viewMart,meals:viewMeals,laundry:viewLaundry,fix:viewFix,score:viewScore,staff:viewStaff,store:viewStore,shift:viewShift,query:viewQuery,chat:viewChat,act:viewAct,me:viewMe};el.innerHTML=(map[TAB]||viewRooms)();bind()}
+function viewLogin(){return "<h1>Posh Manager</h1><p class=ok>Tap your name, enter PIN.</p>"+DB.users.map(function(u){return "<div class=login data-id='"+u.id+"'><b>"+u.name+"</b><br><small>"+u.role+" · "+u.site+"</small></div>"}).join("")}
 function bindLogin(){document.querySelectorAll(".login").forEach(function(c){c.onclick=function(){var u=DB.users.filter(function(x){return x.id===c.getAttribute("data-id")})[0];var p=prompt("PIN for "+u.name,"");if(p===null)return;if(String(p)!==String(u.pin)){toast("Wrong PIN");return}USER=u;TAB=tabs()[0][0];draw()}})}
-function viewRooms(){
- if(ROOM)return viewOne(findRoom(ROOM));
- var list=rooms();
- if(role()==="housekeeper")list=list.filter(function(r){return r.status!=="certified"&&r.status!=="ooo"&&(r.hk===USER.id||r.hk===USER.name)});
- var h="<h1>Rooms</h1>";
- if(role()==="frontdesk"||role()==="manager"||role()==="superadmin"){
-  h+="<div class=card><h2>Assign</h2><select id=asRoom>"+rooms().map(function(r){return "<option value='"+r.id+"'>"+r.number+" · "+r.status+"</option>"}).join("")+"</select><select id=asHk>"+hks().map(function(u){return "<option value='"+u.id+"'>"+u.name+"</option>"}).join("")+"</select><select id=asJob>"+JOBS.map(function(j){return "<option>"+j+"</option>"}).join("")+"</select><button class=btn id=doAssign>Assign</button></div>";
- }
- return h+list.map(function(r){return "<div class=card><b>Rm "+r.number+"</b> · "+r.status+(r.hkName?(" · "+r.hkName):"")+"<br><button class='btn openR' data-id='"+r.id+"'>Open</button></div>"}).join("")||"<div class=warn>No rooms</div>";
-}
-function viewOne(r){
- if(!r)return "<div class=warn>Missing</div>";
- var h="<button class=btn id=backRooms>Back</button><h1>Rm "+r.number+"</h1><div class=ok>"+r.site+" · "+r.status+" · "+(r.job||"")+" · "+(r.hkName||"")+"</div>";
- if(r.hkNote)h+="<div class=warn>DM: "+r.hkNote+"</div>";
- if(role()==="housekeeper"&&r.status!=="certified"&&r.status!=="ooo"){
-  h+="<div class=card><h2>1 Checklist</h2>";
-  DB.fixtures.forEach(function(f){h+="<label>"+f.name+" exp "+f.par+" <input class=fx data-id='"+f.id+"' type=number value='"+(r.fx&&r.fx[f.id]!=null?r.fx[f.id]:f.par)+"'></label>"});
-  h+="<button class=btn id=saveFx>Save checklist</button></div>";
-  h+="<div class=card><h2>2 One video</h2><input id=oneVid type=file accept='video/*'><p>"+(r.videoReady?"Video attached":"No video")+"</p></div>";
-  h+="<div class=card><h2>3 Linen</h2><input id=ltowel type=number placeholder='Towels'><input id=lsheet type=number placeholder='Sheets'><button class=btn id=sendLau>Send to laundry</button></div>";
-  h+="<button class=btn id=submitRm>Submit room</button>";
- }
- if(role()==="manager"||role()==="superadmin")h+="<div class=card><button class=btn id=certify>Certify</button> <button class=btn id=rts>Return to service</button> <button class='btn bad' id=ooo>OOO</button></div>";
- if(role()==="maint")h+="<div class=card><button class='btn bad' id=ooo>OOO</button> <button class=btn id=backSvc>Clear OOO</button></div>";
- return h;
-}
-function viewDesk(){
- var h="<h1>Front desk</h1>";
- if(role()==="frontdesk")h+="<div class=card><input id=gName placeholder='Guest'><select id=gRoom>"+rooms().map(function(r){return "<option>"+r.number+"</option>"}).join("")+"</select><input id=gAmt type=number placeholder='Amount'><input id=gOut type=date><input id=gDebt type=number placeholder='Debt today'><input id=gPaid type=number placeholder='Paid today'><button class=btn id=saveFolio>Save folio</button></div>";
- return h+(DB.checkins||[]).filter(function(c){return siteOk(c.site)}).slice().reverse().map(function(c){return "<div class=card><b>"+c.guest+"</b> Rm "+c.room+" · "+naira(c.amount)+"</div>"}).join("")||"<p>No folios</p>";
-}
-function viewMart(){
- var site=group()?"Ikeja":USER.site;
- var h="<h1>Mini mart</h1><div class=card>"+DB.martItems.map(function(it){return "<p>"+it.name+" · "+naira(it.price)+" · stock "+stock(it.id,site)+"</p>"}).join("")+"</div>";
- if(role()==="frontdesk")h+="<div class=card><select id=mItem>"+DB.martItems.map(function(it){return "<option value='"+it.id+"'>"+it.name+"</option>"}).join("")+"</select><input id=mQty type=number value=1><button class=btn id=sellMart>Sell</button></div><div class=card><select id=rItem>"+DB.martItems.map(function(it){return "<option value='"+it.id+"'>"+it.name+"</option>"}).join("")+"</select><input id=rQty type=number value=1><button class=btn id=recvMart>Receive</button></div>";
- if(role()==="superadmin")h+="<div class=card><input id=ni placeholder='Name'><input id=np type=number placeholder='Price'><input id=nq type=number placeholder='Stock'><button class=btn id=addMart>Add item</button></div>";
- return h;
-}
-function viewMeals(){
- var h="<h1>Breakfast</h1>";
- if(role()==="kitchen")h+="<div class=card><input id=mDay type=date value='"+today()+"'><input id=mChoices placeholder='Continental, Nigerian'><button class=btn id=saveMenu>Save menu</button></div><div class=card><input id=vCode placeholder='Guest code'><button class=btn id=verBf>Verify</button><div id=vHit></div></div><div class=card>"+((DB.breakfasts||[]).filter(function(b){return siteOk(b.site)&&b.status!=="served"}).map(function(b){return "<p>"+b.guest+" · "+b.meal+"</p>"}).join("")||"None waiting")+"</div>";
- if(role()==="frontdesk"){var menu=(DB.menus||[]).filter(function(m){return m.site===USER.site&&m.day===today()})[0];var ch=menu?menu.choices:[];h+="<div class=card>"+(ch.length?"":"<div class=warn>Chef must post menu</div>")+"<input id=bfName placeholder='Guest'><select id=bfMeal>"+ch.map(function(c){return "<option>"+c+"</option>"}).join("")+"</select><button class=btn id=issueBf>Issue code</button></div>"}
- return h;
-}
-function viewLaundry(){return "<h1>Laundry</h1>"+(DB.slips||[]).filter(function(s){return siteOk(s.site)}).slice().reverse().map(function(s){return "<div class=card>Rm "+s.room+" · "+s.status+" · "+JSON.stringify(s.items)+(role()==="laundry"&&s.status==="sent"?"<br><button class='btn recSlip' data-id='"+s.id+"'>Confirm</button>":"")+(role()==="laundry"&&s.status==="received"?"<br><button class='btn issSlip' data-id='"+s.id+"'>Issue clean</button>":"")+"</div>"}).join("")||"<p>No slips</p>"}
-function viewFix(){return "<h1>Maintenance</h1><div class=card><input id=fRoom placeholder='Room'><textarea id=fTxt placeholder='Fault'></textarea><button class=btn id=logFault>Log</button></div>"+(DB.issues||[]).filter(function(i){return siteOk(i.site)}).map(function(i){return "<div class=card>Rm "+i.room+" · "+i.status+"<br>"+i.fault+(role()==="maint"||role()==="manager"?"<br><select class=stFix data-id='"+i.id+"'><option>received</option><option>pending</option><option>materials</option><option>cash</option><option>outsourced</option><option>completed</option></select>":"")+"</div>"}).join("")}
-function viewScore(){return "<h1>HK score</h1>"+hks().map(function(u){return "<div class=card><b>"+u.name+"</b><br><button class='btn sc' data-id='"+u.id+"' data-r='sat'>Satisfactory</button> <button class='btn sc' data-id='"+u.id+"' data-r='unsat'>Unsatisfactory</button> <button class='btn bad sc' data-id='"+u.id+"' data-r='nosal'>No salary</button></div>"}).join("")}
-function viewStaff(){if(role()!=="superadmin")return "<div class=warn>Super Admin only</div>";return "<h1>Staff</h1><div class=card><input id=sn placeholder='Name'><select id=sr><option>housekeeper</option><option>frontdesk</option><option>manager</option><option>laundry</option><option>kitchen</option><option>maint</option><option>storekeeper</option><option>accountant</option></select><select id=ss><option>Ikeja</option><option>Victoria Island</option></select><input id=sp placeholder='PIN'><button class=btn id=addStaff>Add</button></div>"+DB.users.map(function(u,i){return "<div class=card>"+u.name+" · "+u.role+" · "+u.pin+" <button class='btn edU' data-i='"+i+"'>Edit</button></div>"}).join("")+"<div class=card><input id=rn placeholder='Room no'><select id=rsite><option>Ikeja</option><option>Victoria Island</option></select><button class=btn id=addRoom>Add room</button></div>"}
-function viewStore(){return "<h1>Store</h1><p class=ok>Toiletries only. Not laundry linen.</p><div class=card><input id=stItem placeholder='Item'><input id=stQty type=number><button class=btn id=stIn>Receive</button></div>"}
+function viewRooms(){if(ROOM)return viewOne(findRoom(ROOM));var list=rooms();if(role()==="housekeeper")list=list.filter(function(r){return r.status!=="certified"&&r.status!=="ooo"&&(r.hk===USER.id||r.hk===USER.name)});var h="<h1>Rooms</h1><p class=ok>Pending = not certified yet. Open works on every room.</p>";if(role()==="frontdesk"||role()==="manager"||role()==="superadmin"){h+="<div class=card><h2>Assign</h2><select id=asRoom>"+rooms().map(function(r){return "<option value='"+r.id+"'>"+r.number+" · "+r.site+" · "+r.status+"</option>"}).join("")+"</select><select id=asHk>"+hks().map(function(u){return "<option value='"+u.id+"'>"+u.name+"</option>"}).join("")+"</select><select id=asJob>"+JOBS.map(function(j){return "<option>"+j+"</option>"}).join("")+"</select><button class=btn id=doAssign>Assign</button></div>"}return h+list.map(function(r){return "<div class=card><b>Rm "+r.number+"</b> · "+r.site+"<br>"+r.status+(r.hkName?(" · "+r.hkName):"")+"<br><button type=button class='btn openR' data-id='"+r.id+"'>Open</button></div>"}).join("")}
+function viewOne(r){if(!r)return "<div class=warn>Room not found</div><button class=btn id=backRooms>Back</button>";var h="<button class=btn id=backRooms>Back</button><h1>Rm "+r.number+"</h1><div class=ok>"+r.site+" · "+r.status+" · "+(r.job||"")+" · "+(r.hkName||"unassigned")+"</div>";if(r.hkNote)h+="<div class=warn>DM: "+r.hkNote+"</div>";if(role()==="housekeeper"&&r.status!=="certified"&&r.status!=="ooo"){h+="<div class=card><h2>1 Checklist</h2>";DB.fixtures.forEach(function(f){h+="<label>"+f.name+" exp "+f.par+" <input class=fx data-id='"+f.id+"' type=number value='"+(r.fx&&r.fx[f.id]!=null?r.fx[f.id]:f.par)+"'></label>"});h+="<button class=btn id=saveFx>Save checklist</button></div><div class=card><h2>2 One video</h2><input id=oneVid type=file accept='video/*'><p>"+(r.videoReady?"Video attached":"No video")+"</p></div><div class=card><h2>3 Linen</h2><input id=ltowel type=number placeholder='Towels'><input id=lsheet type=number placeholder='Sheets'><button class=btn id=sendLau>Send to laundry</button></div><button class=btn id=submitRm>Submit room</button>"}if(role()==="manager"||role()==="superadmin")h+="<div class=card><button class=btn id=certify>Certify</button> <button class=btn id=rts>Return to service</button> <button class='btn bad' id=ooo>OOO</button></div>";if(role()==="maint")h+="<div class=card><button class='btn bad' id=ooo>OOO</button> <button class=btn id=backSvc>Clear OOO</button></div>";if(role()==="frontdesk")h+="<div class=card>View only here. Check-in a certified room from Desk.</div>";return h}
+function martList(){return (DB.martSales||[]).filter(function(s){return siteOk(s.site)}).slice().reverse().map(function(s){return "<p>"+s.qty+" x "+s.name+" · "+naira(s.amount)+" · "+(s.site||"")+" · "+s.by+" · "+(s.at||s.day)+"</p>"}).join("")||"<p>No mart sales yet</p>"}
+function viewDesk(){var h="<h1>Front desk</h1>";if(role()==="frontdesk")h+="<div class=card><input id=gName placeholder='Guest'><select id=gRoom>"+rooms().map(function(r){return "<option>"+r.number+"</option>"}).join("")+"</select><input id=gAmt type=number placeholder='Amount'><input id=gOut type=date><input id=gDebt type=number placeholder='Debt today'><input id=gPaid type=number placeholder='Paid today'><button class=btn id=saveFolio>Save folio</button></div>";h+="<div class=card><h2>Room folios</h2>"+((DB.checkins||[]).filter(function(c){return siteOk(c.site)}).slice().reverse().map(function(c){return "<p><b>"+c.guest+"</b> Rm "+c.room+" · "+naira(c.amount)+" · "+c.by+"</p>"}).join("")||"<p>None</p>")+"</div><div class=card><h2>Mini mart sales</h2>"+martList()+"</div>";return h}
+function viewMart(){var h="<h1>Mini mart</h1><div class=card>"+DB.martItems.map(function(it){return "<p><b>"+it.name+"</b> · "+naira(it.price)+" · Ikeja "+stock(it.id,"Ikeja")+" · VI "+stock(it.id,"Victoria Island")+"</p>"}).join("")+"</div>";if(role()==="frontdesk")h+="<div class=card><h2>Sell</h2><select id=mItem>"+DB.martItems.map(function(it){return "<option value='"+it.id+"'>"+it.name+"</option>"}).join("")+"</select><input id=mQty type=number value=1><button class=btn id=sellMart>Sell</button></div><div class=card><h2>Receive</h2><select id=rItem>"+DB.martItems.map(function(it){return "<option value='"+it.id+"'>"+it.name+"</option>"}).join("")+"</select><input id=rQty type=number value=1><button class=btn id=recvMart>Receive</button></div>";if(role()==="superadmin"||role()==="ceo"){h+="<div class=card><h2>Add</h2><input id=ni placeholder='Name'><input id=np type=number placeholder='Price'><input id=nq type=number placeholder='Stock'><button class=btn id=addMart>Add</button></div><div class=card><h2>Edit</h2><select id=ei>"+DB.martItems.map(function(it){return "<option value='"+it.id+"'>"+it.name+"</option>"}).join("")+"</select><input id=ep type=number placeholder='New price'><input id=es type=number placeholder='Ikeja stock'><input id=ev type=number placeholder='VI stock'><button class=btn id=editMart>Save edit</button></div>"}h+="<div class=card><h2>Sales report</h2>"+martList()+"</div>";return h}
+function viewMeals(){var h="<h1>Breakfast</h1>";if(role()==="kitchen")h+="<div class=card><input id=mDay type=date value='"+today()+"'><input id=mChoices placeholder='Continental, Nigerian'><button class=btn id=saveMenu>Save menu</button></div><div class=card><input id=vCode placeholder='Code'><button class=btn id=verBf>Verify</button><div id=vHit></div></div>";if(role()==="frontdesk"){var menu=(DB.menus||[]).filter(function(m){return m.site===USER.site&&m.day===today()})[0];var ch=menu?menu.choices:[];h+="<div class=card>"+(ch.length?"":"<div class=warn>Chef must post menu</div>")+"<input id=bfName placeholder='Guest'><select id=bfMeal>"+ch.map(function(c){return "<option>"+c+"</option>"}).join("")+"</select><button class=btn id=issueBf>Issue code</button></div>"}return h}
+function viewLaundry(){return "<h1>Laundry</h1>"+(DB.slips||[]).filter(function(s){return siteOk(s.site)}).slice().reverse().map(function(s){return "<div class=card>Rm "+s.room+" · "+s.status+(role()==="laundry"&&s.status==="sent"?"<br><button class='btn recSlip' data-id='"+s.id+"'>Confirm</button>":"")+(role()==="laundry"&&s.status==="received"?"<br><button class='btn issSlip' data-id='"+s.id+"'>Issue clean</button>":"")+"</div>"}).join("")||"<p>No slips</p>"}
+function viewFix(){return "<h1>Maintenance</h1><div class=card><input id=fRoom placeholder='Room'><textarea id=fTxt></textarea><button class=btn id=logFault>Log</button></div>"+(DB.issues||[]).filter(function(i){return siteOk(i.site)}).map(function(i){return "<div class=card>Rm "+i.room+" · "+i.status+"<br>"+i.fault+(role()==="maint"||role()==="manager"?"<br><select class=stFix data-id='"+i.id+"'><option>received</option><option>pending</option><option>materials</option><option>cash</option><option>outsourced</option><option>completed</option></select>":"")+"</div>"}).join("")}
+function viewScore(){return "<h1>HK score</h1>"+hks().map(function(u){return "<div class=card><b>"+u.name+"</b> · "+u.site+"<br><button class='btn sc' data-id='"+u.id+"' data-r='sat'>Satisfactory</button> <button class='btn sc' data-id='"+u.id+"' data-r='unsat'>Unsatisfactory</button> <button class='btn bad sc' data-id='"+u.id+"' data-r='nosal'>No salary</button></div>"}).join("")}
+function viewStaff(){if(role()!=="superadmin")return "<div class=warn>Super Admin only</div>";return "<h1>Staff</h1><div class=card><input id=sn placeholder='Name'><select id=sr><option>housekeeper</option><option>frontdesk</option><option>manager</option><option>laundry</option><option>kitchen</option><option>maint</option><option>storekeeper</option><option>accountant</option></select><select id=ss><option>Ikeja</option><option>Victoria Island</option><option>All locations</option></select><input id=sp placeholder='PIN'><button class=btn id=addStaff>Add</button></div>"+DB.users.map(function(u,i){return "<div class=card><b>"+u.name+"</b><br>"+u.role+" · <b>"+u.site+"</b> · PIN "+u.pin+"<br><button class='btn edU' data-i='"+i+"'>Edit</button></div>"}).join("")+"<div class=card><input id=rn placeholder='Room no'><select id=rsite><option>Ikeja</option><option>Victoria Island</option></select><button class=btn id=addRoom>Add room</button></div>"}
+function viewStore(){var moves=(DB.storeMoves||[]).filter(function(m){return siteOk(m.site)}).slice().reverse();return "<h1>Store</h1><p class=ok>Receive in, then Supply out.</p><div class=card><h2>Receive</h2><input id=stItem placeholder='Item'><input id=stQty type=number><button class=btn id=stIn>Receive</button></div><div class=card><h2>Supply</h2><input id=suItem placeholder='Item'><input id=suQty type=number><input id=suTo placeholder='To room or dept'><button class=btn id=stOut>Supply</button></div><div class=card><h2>Movement</h2>"+(moves.map(function(m){return "<p>"+m.kind+" · "+m.item+" x "+m.qty+(m.to?(" → "+m.to):"")+" · "+m.by+"</p>"}).join("")||"<p>None</p>")+"</div>"}
 function viewShift(){return "<h1>Shift</h1><div class=card><button class=btn id=clockIn>Clock in</button> <button class=btn id=clockOut>Clock out</button></div><div class=card><input id=inhouse placeholder='In-house'><textarea id=inc placeholder='Incidents'></textarea><button class=btn id=subShift>Submit report</button></div>"}
-function viewQuery(){return "<h1>Query</h1><div class=card><textarea id=qTxt></textarea><button class=btn id=sendQ>Send</button></div>"+(role()==="frontdesk"?"<div class=card><textarea id=qAns></textarea><button class=btn id=replyQ>Reply</button></div>":"")+(DB.queries||[]).map(function(q){return "<div class=card>"+q.by+": "+q.text+"</div>"}).join("")}
-function viewChat(){return "<h1>Chat</h1><div class=card><textarea id=cTxt></textarea><button class=btn id=sendC>Send</button></div>"+(DB.msgs||[]).filter(function(m){return group()||!m.to||m.to===USER.id||m.from===USER.id}).map(function(m){return "<div class=card>"+m.fromName+": "+m.text+"</div>"}).join("")}
+function viewQuery(){return "<h1>Query</h1><div class=card><textarea id=qTxt></textarea><button class=btn id=sendQ>Send</button></div>"+(role()==="frontdesk"?"<div class=card><textarea id=qAns></textarea><button class=btn id=replyQ>Reply</button></div>":"")+(DB.queries||[]).map(function(q){return "<div class=card>"+q.by+": "+q.text+(q.reply?("<br>Reply: "+q.reply):"")+"</div>"}).join("")}
+function viewChat(){var people=DB.users.filter(function(u){return u.id!==USER.id&&(group()||u.site===USER.site||u.site==="All locations")});return "<h1>Chat</h1><div class=card><select id=cTo><option value=''>Everyone at my site</option>"+people.map(function(u){return "<option value='"+u.id+"'>"+u.name+" · "+u.site+"</option>"}).join("")+"</select><textarea id=cTxt></textarea><button class=btn id=sendC>Send</button></div>"+(DB.msgs||[]).filter(function(m){return group()||!m.to||m.to===USER.id||m.from===USER.id||(!m.to&&siteOk(m.site))}).slice().reverse().map(function(m){return "<div class=card><b>"+m.fromName+"</b> → "+(m.toName||"site")+"<br>"+m.text+"</div>"}).join("")||"<p>No messages</p>"}
+function viewAct(){return "<h1>Activity</h1><div class=card><h2>Room folios</h2>"+((DB.checkins||[]).filter(function(c){return siteOk(c.site)}).slice().reverse().map(function(c){return "<p>"+c.day+" · "+c.guest+" Rm "+c.room+" · "+naira(c.amount)+" · "+c.by+"</p>"}).join("")||"<p>None</p>")+"</div><div class=card><h2>Mini mart sales</h2>"+martList()+"</div><div class=card><h2>Shifts</h2>"+((DB.shifts||[]).filter(function(s){return siteOk(s.site)}).slice().reverse().map(function(s){return "<p>"+s.day+" · "+s.by+" · "+(s.incident||"")+"</p>"}).join("")||"<p>None</p>")+"</div><div class=card><h2>Log</h2>"+((DB.log||[]).filter(function(l){return siteOk(l.site)}).slice().reverse().slice(0,50).map(function(l){return "<p>"+l.at+" · "+l.by+" · "+l.text+"</p>"}).join("")||"<p>None</p>")+"</div>"}
 function viewMe(){return "<h1>"+USER.name+"</h1><p>"+USER.role+" · "+USER.site+"</p>"}
-function bind(){
- function on(id,fn){var e=document.getElementById(id);if(e)e.onclick=fn}
- document.querySelectorAll(".openR").forEach(function(b){b.onclick=function(){ROOM=b.getAttribute("data-id");draw()}});
+function openRoom(id){ROOM=id;TAB="rooms";draw()}
+if(!window.__weekClicks){window.__weekClicks=true;document.addEventListener("click",function(ev){var t=ev.target;if(!t)return;if(t.className&&String(t.className).indexOf("openR")>=0){ev.preventDefault();openRoom(t.getAttribute("data-id"))}},true)}
+function bind(){function on(id,fn){var e=document.getElementById(id);if(e)e.onclick=fn}
  on("backRooms",function(){ROOM=null;draw()});
- on("doAssign",function(){var r=findRoom(document.getElementById("asRoom").value);var hk=DB.users.filter(function(u){return u.id===document.getElementById("asHk").value})[0];if(!r||!hk)return;if(r.status==="certified"){toast("Certified rooms stay closed");return}r.hk=hk.id;r.hkName=hk.name;r.job=document.getElementById("asJob").value;r.status="pending";r.videoReady=false;r.check=false;save();toast("Assigned");draw()});
- on("saveFx",function(){var r=findRoom(ROOM);r.fx={};r.check=true;document.querySelectorAll(".fx").forEach(function(i){r.fx[i.getAttribute("data-id")]=parseInt(i.value,10)||0});save();toast("Checklist saved")});
+ on("doAssign",function(){var r=findRoom(document.getElementById("asRoom").value);var hk=DB.users.filter(function(u){return u.id===document.getElementById("asHk").value})[0];if(!r||!hk)return;if(r.status==="certified"){toast("Certified rooms stay closed");return}r.hk=hk.id;r.hkName=hk.name;r.job=document.getElementById("asJob").value;r.status="assigned";r.videoReady=false;r.check=false;note("Assigned Rm "+r.number);save();toast("Assigned");draw()});
+ on("saveFx",function(){var r=findRoom(ROOM);r.fx={};r.check=true;document.querySelectorAll(".fx").forEach(function(i){r.fx[i.getAttribute("data-id")]=parseInt(i.value,10)||0});save();toast("Saved")});
  var vid=document.getElementById("oneVid");if(vid)vid.onchange=function(){var r=findRoom(ROOM);if(this.files&&this.files[0]){r.videoReady=true;save();toast("Video attached");draw()}};
- on("sendLau",function(){var r=findRoom(ROOM);var items={};var t=parseInt((document.getElementById("ltowel")||{}).value,10);if(t>0)items.bath_towel=t;var s=parseInt((document.getElementById("lsheet")||{}).value,10);if(s>0)items.sheet=s;if(!Object.keys(items).length){toast("Enter counts");return}DB.slips.push({id:uid("s"),room:r.number,site:r.site,by:USER.name,items:items,status:"sent"});r.laundry=true;save();toast("Sent");draw()});
- on("submitRm",function(){var r=findRoom(ROOM);if(!r.check){toast("Save checklist first");return}if(!r.videoReady){toast("Attach video first");return}r.status="submitted";save();toast("Submitted");draw()});
- on("certify",function(){var r=findRoom(ROOM);if(r.status!=="submitted"){toast("Must be submitted");return}r.status="certified";save();toast("Certified");draw()});
- on("rts",function(){var r=findRoom(ROOM);var n=prompt("Note for housekeeper","Spring clean");if(n===null)return;r.status="pending";r.hkNote=n;r.videoReady=false;r.check=false;r.returnedCount=(r.returnedCount||0)+1;save();toast("Returned N500");draw()});
- on("ooo",function(){findRoom(ROOM).status="ooo";save();draw()});
- on("backSvc",function(){findRoom(ROOM).status="pending";save();draw()});
- on("saveFolio",function(){var name=document.getElementById("gName").value.trim(),num=document.getElementById("gRoom").value,out=document.getElementById("gOut").value,r=byNum(num);if(!name||!r)return;if(r.status!=="certified"){toast("Only certified rooms");return}if(!out){toast("Checkout date required");return}DB.checkins.push({guest:name,room:num,amount:parseFloat(document.getElementById("gAmt").value)||0,debt:parseFloat(document.getElementById("gDebt").value)||0,paid:parseFloat(document.getElementById("gPaid").value)||0,checkout:out,site:USER.site,by:USER.name,day:today()});r.status="occupied";save();toast("Folio saved");draw()});
- on("sellMart",function(){var id=document.getElementById("mItem").value,qty=parseInt(document.getElementById("mQty").value,10)||0,it=DB.martItems.filter(function(x){return x.id===id})[0];if(stock(id,USER.site)<qty){toast("No stock");return}setStock(id,USER.site,stock(id,USER.site)-qty);DB.martSales.push({name:it.name,qty:qty,amount:qty*it.price,site:USER.site,by:USER.name,day:today()});save();toast("Sold");draw()});
+ on("sendLau",function(){var r=findRoom(ROOM);var items={};var t=parseInt((document.getElementById("ltowel")||{}).value,10);if(t>0)items.bath_towel=t;var s=parseInt((document.getElementById("lsheet")||{}).value,10);if(s>0)items.sheet=s;if(!Object.keys(items).length){toast("Enter counts");return}DB.slips.push({id:uid("s"),room:r.number,site:r.site,by:USER.name,items:items,status:"sent"});save();draw()});
+ on("submitRm",function(){var r=findRoom(ROOM);if(!r.check){toast("Save checklist first");return}if(!r.videoReady){toast("Attach video first");return}r.status="submitted";note("Submitted Rm "+r.number);save();toast("Submitted");draw()});
+ on("certify",function(){var r=findRoom(ROOM);if(r.status!=="submitted"){toast("Must be submitted");return}r.status="certified";note("Certified Rm "+r.number);save();draw()});
+ on("rts",function(){var r=findRoom(ROOM);var n=prompt("Note","Spring clean");if(n===null)return;r.status="assigned";r.hkNote=n;r.videoReady=false;r.check=false;save();draw()});
+ on("ooo",function(){findRoom(ROOM).status="ooo";save();draw()});on("backSvc",function(){findRoom(ROOM).status="pending";save();draw()});
+ on("saveFolio",function(){var name=document.getElementById("gName").value.trim(),num=document.getElementById("gRoom").value,out=document.getElementById("gOut").value,r=byNum(num);if(!name||!r)return;if(r.status!=="certified"){toast("Only certified rooms");return}if(!out){toast("Checkout date required");return}DB.checkins.push({guest:name,room:num,amount:parseFloat(document.getElementById("gAmt").value)||0,debt:parseFloat(document.getElementById("gDebt").value)||0,paid:parseFloat(document.getElementById("gPaid").value)||0,checkout:out,site:USER.site,by:USER.name,day:today()});r.status="occupied";note("Check-in "+name);save();toast("Folio saved");draw()});
+ on("sellMart",function(){var id=document.getElementById("mItem").value,qty=parseInt(document.getElementById("mQty").value,10)||0,it=DB.martItems.filter(function(x){return x.id===id})[0];if(stock(id,USER.site)<qty){toast("No stock");return}setStock(id,USER.site,stock(id,USER.site)-qty);DB.martSales.push({item:id,name:it.name,qty:qty,amount:qty*it.price,site:USER.site,by:USER.name,day:today(),at:now()});note("Mart sold "+qty+" x "+it.name);save();toast("Sold and logged");draw()});
  on("recvMart",function(){var id=document.getElementById("rItem").value,qty=parseInt(document.getElementById("rQty").value,10)||0;setStock(id,USER.site,stock(id,USER.site)+qty);save();draw()});
  on("addMart",function(){var name=document.getElementById("ni").value.trim();if(!name)return;var id="m"+Date.now();DB.martItems.push({id:id,name:name,price:parseFloat(document.getElementById("np").value)||0});SITES.forEach(function(s){DB.martStock.push({item:id,site:s,qty:parseInt(document.getElementById("nq").value,10)||0})});save();draw()});
+ on("editMart",function(){var id=document.getElementById("ei").value,it=DB.martItems.filter(function(x){return x.id===id})[0];if(!it)return;var p=document.getElementById("ep").value,s=document.getElementById("es").value,v=document.getElementById("ev").value;if(p!=="")it.price=parseFloat(p)||0;if(s!=="")setStock(id,"Ikeja",s);if(v!=="")setStock(id,"Victoria Island",v);save();toast("Saved");draw()});
  on("saveMenu",function(){DB.menus=DB.menus.filter(function(m){return !(m.day===document.getElementById("mDay").value&&m.site===USER.site)});DB.menus.push({day:document.getElementById("mDay").value,site:USER.site,choices:document.getElementById("mChoices").value.split(",").map(function(x){return x.trim()}).filter(Boolean)});save();draw()});
  on("issueBf",function(){var g=document.getElementById("bfName").value.trim();if(!g)return;var code=String(1000+Math.floor(Math.random()*9000));DB.breakfasts.push({guest:g,meal:document.getElementById("bfMeal").value,code:code,status:"waiting",site:USER.site,day:today()});save();toast("Code: "+code)});
  on("verBf",function(){var b=(DB.breakfasts||[]).filter(function(x){return x.code===document.getElementById("vCode").value.trim()})[0];var box=document.getElementById("vHit");if(!b){box.innerHTML="<div class=warn>Invalid</div>";return}if(b.status==="served"){box.innerHTML="<div class=warn>Already served</div>";return}b.status="served";save();box.innerHTML="<div class=ok>Serve "+b.guest+"</div>"});
@@ -162,15 +106,16 @@ function bind(){
  document.querySelectorAll(".stFix").forEach(function(s){s.onchange=function(){DB.issues.filter(function(i){return i.id===s.getAttribute("data-id")})[0].status=s.value;save()}});
  document.querySelectorAll(".sc").forEach(function(b){b.onclick=function(){DB.scores.push({hk:b.getAttribute("data-id"),day:today(),rating:b.getAttribute("data-r"),by:USER.name});save();toast("Scored")}});
  on("addStaff",function(){DB.users.push({id:uid("u"),name:document.getElementById("sn").value,role:document.getElementById("sr").value,site:document.getElementById("ss").value,pin:document.getElementById("sp").value});save();draw()});
- document.querySelectorAll(".edU").forEach(function(b){b.onclick=function(){var u=DB.users[parseInt(b.getAttribute("data-i"),10)];u.name=prompt("Name",u.name)||u.name;u.role=prompt("Role",u.role)||u.role;u.pin=prompt("PIN",u.pin)||u.pin;save();draw()}});
+ document.querySelectorAll(".edU").forEach(function(b){b.onclick=function(){var u=DB.users[parseInt(b.getAttribute("data-i"),10)];u.name=prompt("Name",u.name)||u.name;u.role=prompt("Role",u.role)||u.role;u.site=prompt("Location",u.site)||u.site;u.pin=prompt("PIN",u.pin)||u.pin;save();draw()}});
  on("addRoom",function(){var n=document.getElementById("rn").value.trim();if(!n)return;DB.rooms.push({id:uid("r"),number:n,site:document.getElementById("rsite").value,status:"pending",hk:"",job:"",videoReady:false,check:false,fx:{}});save();draw()});
- on("stIn",function(){DB.storeMoves.push({item:document.getElementById("stItem").value,qty:document.getElementById("stQty").value,site:USER.site,by:USER.name});save();toast("Stored")});
+ on("stIn",function(){DB.storeMoves.push({kind:"receive",item:document.getElementById("stItem").value,qty:document.getElementById("stQty").value,site:USER.site,by:USER.name,at:now()});save();toast("Received");draw()});
+ on("stOut",function(){DB.storeMoves.push({kind:"supply",item:document.getElementById("suItem").value,qty:document.getElementById("suQty").value,to:document.getElementById("suTo").value,site:USER.site,by:USER.name,at:now()});save();toast("Supplied");draw()});
  on("clockIn",function(){DB.clocks.push({day:today(),site:USER.site,by:USER.name,inAt:new Date().toLocaleTimeString(),outAt:""});save();toast("In")});
  on("clockOut",function(){var c=(DB.clocks||[]).filter(function(x){return x.by===USER.name&&!x.outAt}).pop();if(c)c.outAt=new Date().toLocaleTimeString();save()});
  on("subShift",function(){DB.shifts.push({day:today(),site:USER.site,by:USER.name,inhouse:document.getElementById("inhouse").value,incident:document.getElementById("inc").value});save();toast("Submitted")});
  on("sendQ",function(){DB.queries.push({site:USER.site,by:USER.name,text:document.getElementById("qTxt").value});save();draw()});
  on("replyQ",function(){var q=(DB.queries||[]).pop();if(q){q.reply=document.getElementById("qAns").value;save();draw()}});
- on("sendC",function(){DB.msgs.push({from:USER.id,fromName:USER.name,site:USER.site,text:document.getElementById("cTxt").value});save();draw()});
+ on("sendC",function(){var to=document.getElementById("cTo").value;var tu=DB.users.filter(function(u){return u.id===to})[0];DB.msgs.push({from:USER.id,fromName:USER.name,to:to,toName:tu?tu.name:"site",site:USER.site,text:document.getElementById("cTxt").value,at:now()});save();draw()});
 }
 load();draw();
 </script></body></html>
