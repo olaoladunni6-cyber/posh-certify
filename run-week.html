@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Posh Manager Week</title>
+<style>html,body{margin:0;height:100%;background:#1c332c}iframe{border:0;width:100%;height:100%}</style>
+</head>
+<body>
+<iframe id="appf" src="posh-week.html?v=3"></iframe>
+<script>
+(function(){
+  var f=document.getElementById("appf");
+  f.onload=function(){
+    try{
+      var w=f.contentWindow;
+      if(!w||!w.document||!w.document.body)return;
+      if(w.document.getElementById("poshVidGate"))return;
+      var s=w.document.createElement("script");
+      s.id="poshVidGate";
+      s.src="posh-week-vid.js?v=4";
+      w.document.body.appendChild(s);
+    }catch(e){}
+  };
+})();
+</script>
+</body>
+</html>
