@@ -9,6 +9,7 @@
 <body>
 <iframe id="appf" src="posh-week.html?v=3"></iframe>
 <script>
+try{ if(navigator.serviceWorker) navigator.serviceWorker.register("sw.js"); }catch(e){}
 (function(){
   var f=document.getElementById("appf");
   f.onload=function(){
@@ -24,7 +25,7 @@
       add("poshVidGate","posh-week-vid.js?v=4");
       add("poshExtraGate","posh-week-extra.js?v=9");
       add("poshLinenGate","posh-week-linen.js?v=10");
-      add("poshAlertGate","posh-week-alerts.js?v=11");
+      add("poshAlertGate","posh-week-alerts.js?v=12");
       add("poshCloudGate","posh-week-cloud.js?v=7");
     }catch(e){}
   };
