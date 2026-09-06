@@ -2,6 +2,7 @@
   var CFG_KEY="posh-week-cloud-cfg";
   var DEFAULT_URL="https://xxmhoiuysulcvltttrue.supabase.co";
   var DEFAULT_KEY="sb_publishable_UCziRAwvUlBk581_kOQdSQ_Pkzori7o";
+  var ROW="posh";
   var timer=null, pending=null, lastMsg="Cloud idle";
 
   function cfg(){
@@ -12,38 +13,50 @@
   function setCfg(url,key){
     localStorage.setItem(CFG_KEY, JSON.stringify({url:(url||"").replace(/\/$/,""), key:key||""}));
   }
-  function heads(){
+  function heads(extra){
     var c=cfg();
-    return {
+    var h={
       apikey:c.key,
       Authorization:"Bearer "+c.key,
       "Content-Type":"application/json",
-      Prefer:"return=representation"
+      Accept:"application/json",
+      Prefer:"return=minimal"
     };
+    if(extra) for(var k in extra) h[k]=extra[k];
+    return h;
   }
   function rest(){ return cfg().url.replace(/\/$/,"")+"/rest/v1/hotel_live"; }
-
   function setMsg(m){
     lastMsg=m;
     var el=document.getElementById("cloudMsg");
     if(el) el.textContent=m;
+  }
+  function mergeHotel(incoming){
+    if(!incoming || typeof incoming!=="object") return;
+    if(!DB) DB={};
+    var keys=["users","rooms","fixtures","fdChecks","lauItems","lauStock","lauMoves","martItems","martStock","martSales","slips","issues","scores","clocks","checkins","shifts","menus","breakfasts","queries","msgs","storeMoves","log","shiftReports","salesQueries"];
+    keys.forEach(function(k){
+      if(incoming[k]!=null) DB[k]=incoming[k];
+    });
+    if(incoming.rooms && !DB.rooms) DB.rooms=incoming.rooms;
+    try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
   }
 
   window.cloudRefresh=function(){
     var c=cfg();
     if(!c.url||!c.key){ setMsg("Missing URL or key"); return Promise.resolve(); }
     setMsg("Refreshing…");
-    return fetch(rest()+"?id=eq.posh&select=hotel",{headers:heads()}).then(function(r){
-      return r.json().then(function(j){ return {ok:r.ok, j:j, status:r.status}; });
+    return fetch(rest()+"?id=eq."+ROW+"&select=payload,updated",{headers:heads()}).then(function(r){
+      return r.text().then(function(t){ var j; try{j=JSON.parse(t)}catch(e){j=t} return {ok:r.ok,status:r.status,j:j}; });
     }).then(function(x){
       if(!x.ok){ setMsg("Refresh failed "+x.status); return; }
       var row=x.j && x.j[0];
-      if(!row || !row.hotel){ setMsg("Cloud empty — Publish from one phone first"); return; }
-      DB=row.hotel;
-      try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
+      var data=row && (row.payload||row.hotel);
+      if(!data){ setMsg("Cloud empty — Publish from Super Admin first"); return; }
+      mergeHotel(data);
       setMsg("Refreshed "+new Date().toLocaleTimeString());
       if(typeof draw==="function") draw();
-    }).catch(function(e){ setMsg("Refresh error"); });
+    }).catch(function(){ setMsg("Refresh error"); });
   };
 
   window.cloudPublish=function(){
@@ -51,18 +64,12 @@
     if(!c.url||!c.key){ setMsg("Missing URL or key"); return Promise.resolve(); }
     if(!DB) return Promise.resolve();
     setMsg("Publishing…");
-    var body=JSON.stringify({id:"posh", hotel:DB});
-    return fetch(rest()+"?id=eq.posh",{method:"PATCH",headers:heads(),body:JSON.stringify({hotel:DB})}).then(function(r){
-      if(r.status===404 || r.status===406){
-        return fetch(rest(),{method:"POST",headers:Object.assign({},heads(),{Prefer:"resolution=merge-duplicates,return=representation"}),body:body});
-      }
-      if(!r.ok){
-        return fetch(rest(),{method:"POST",headers:Object.assign({},heads(),{Prefer:"resolution=merge-duplicates,return=representation"}),body:body});
-      }
-      return r;
-    }).then(function(r){
-      if(!r.ok) setMsg("Publish failed "+r.status);
-      else setMsg("Published "+new Date().toLocaleTimeString());
+    var body=JSON.stringify({payload:DB, updated:new Date().toISOString()});
+    return fetch(rest()+"?id=eq."+ROW, {method:"PATCH", headers:heads(), body:body}).then(function(r){
+      return r.text().then(function(t){ return {ok:r.ok,status:r.status,t:t}; });
+    }).then(function(x){
+      if(x.ok){ setMsg("Published "+new Date().toLocaleTimeString()); return; }
+      setMsg("Publish failed "+x.status+(x.t?(": "+String(x.t).slice(0,80)):""));
     }).catch(function(){ setMsg("Publish error"); });
   };
 
@@ -82,13 +89,12 @@
       (admin?("<input id=cUrl placeholder='Project URL' value='"+c.url+"'><input id=cKey placeholder='Publishable key' value='"+c.key+"'><button type=button class=btn id=cSave>Save keys</button> "):"")+
       "<button type=button class=btn id=cPub>Publish</button> "+
       "<button type=button class=btn id=cRef>Refresh</button>"+
-      "<p>Every phone uses this same hotel. Tap Refresh if you do not see a change.</p></div>";
+      "<p>Same hotel on every phone. If a phone is behind, tap Refresh.</p></div>";
   }
 
   function injectBox(){
     var app=document.getElementById("app");
-    if(!app) return;
-    if(document.getElementById("cloudBox")) return;
+    if(!app || document.getElementById("cloudBox")) return;
     var show=false;
     try{ show = !USER || TAB==="me" || (typeof role==="function" && (role()==="superadmin"||role()==="ceo")); }catch(e){}
     if(!show) return;
@@ -109,5 +115,5 @@
   };
 
   if(!timer) timer=setInterval(function(){ if(USER) window.cloudRefresh(); }, 25000);
-  setTimeout(function(){ if(typeof load==="function") load(); window.cloudRefresh(); }, 400);
+  setTimeout(function(){ window.cloudRefresh(); }, 500);
 })();
