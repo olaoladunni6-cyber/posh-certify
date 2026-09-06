@@ -13,17 +13,15 @@
   function setCfg(url,key){
     localStorage.setItem(CFG_KEY, JSON.stringify({url:(url||"").replace(/\/$/,""), key:key||""}));
   }
-  function heads(extra){
+  function heads(){
     var c=cfg();
-    var h={
+    return {
       apikey:c.key,
       Authorization:"Bearer "+c.key,
       "Content-Type":"application/json",
       Accept:"application/json",
       Prefer:"return=minimal"
     };
-    if(extra) for(var k in extra) h[k]=extra[k];
-    return h;
   }
   function rest(){ return cfg().url.replace(/\/$/,"")+"/rest/v1/hotel_live"; }
   function setMsg(m){
@@ -31,18 +29,22 @@
     var el=document.getElementById("cloudMsg");
     if(el) el.textContent=m;
   }
+  function formBusy(){
+    var a=document.activeElement;
+    if(!a) return false;
+    var tag=(a.tagName||"").toLowerCase();
+    if(tag==="input"||tag==="select"||tag==="textarea") return true;
+    return false;
+  }
   function mergeHotel(incoming){
     if(!incoming || typeof incoming!=="object") return;
     if(!DB) DB={};
-    var keys=["users","rooms","fixtures","fdChecks","lauItems","lauStock","lauMoves","martItems","martStock","martSales","slips","issues","scores","clocks","checkins","shifts","menus","breakfasts","queries","msgs","storeMoves","log","shiftReports","salesQueries"];
-    keys.forEach(function(k){
-      if(incoming[k]!=null) DB[k]=incoming[k];
-    });
-    if(incoming.rooms && !DB.rooms) DB.rooms=incoming.rooms;
+    var keys=["users","rooms","fixtures","fdChecks","lauItems","lauStock","lauMoves","martItems","martStock","martSales","slips","issues","scores","clocks","checkins","shifts","menus","breakfasts","queries","msgs","storeMoves","log","shiftReports","salesQueries","washServices","guestWashes"];
+    keys.forEach(function(k){ if(incoming[k]!=null) DB[k]=incoming[k]; });
     try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
   }
 
-  window.cloudRefresh=function(){
+  window.cloudRefresh=function(forceDraw){
     var c=cfg();
     if(!c.url||!c.key){ setMsg("Missing URL or key"); return Promise.resolve(); }
     setMsg("Refreshing…");
@@ -55,6 +57,8 @@
       if(!data){ setMsg("Cloud empty — Publish from Super Admin first"); return; }
       mergeHotel(data);
       setMsg("Refreshed "+new Date().toLocaleTimeString());
+      if(forceDraw===false) return;
+      if(formBusy() && forceDraw!==true){ setMsg("Refreshed in background — form kept open"); return; }
       if(typeof draw==="function") draw();
     }).catch(function(){ setMsg("Refresh error"); });
   };
@@ -77,7 +81,7 @@
   window.save=function(){
     if(typeof _save==="function") _save();
     clearTimeout(pending);
-    pending=setTimeout(function(){ window.cloudPublish(); }, 900);
+    pending=setTimeout(function(){ window.cloudPublish(); }, 1200);
   };
 
   function boxHtml(){
@@ -89,7 +93,7 @@
       (admin?("<input id=cUrl placeholder='Project URL' value='"+c.url+"'><input id=cKey placeholder='Publishable key' value='"+c.key+"'><button type=button class=btn id=cSave>Save keys</button> "):"")+
       "<button type=button class=btn id=cPub>Publish</button> "+
       "<button type=button class=btn id=cRef>Refresh</button>"+
-      "<p>Same hotel on every phone. If a phone is behind, tap Refresh.</p></div>";
+      "<p>Same hotel on every phone. Forms stay open while you type.</p></div>";
   }
 
   function injectBox(){
@@ -105,7 +109,7 @@
       setMsg("Keys saved on this phone");
     };
     var p=document.getElementById("cPub"); if(p) p.onclick=function(){ window.cloudPublish(); };
-    var r=document.getElementById("cRef"); if(r) r.onclick=function(){ window.cloudRefresh(); };
+    var r=document.getElementById("cRef"); if(r) r.onclick=function(){ window.cloudRefresh(true); };
   }
 
   var _draw=window.draw;
@@ -114,6 +118,6 @@
     injectBox();
   };
 
-  if(!timer) timer=setInterval(function(){ if(USER) window.cloudRefresh(); }, 25000);
-  setTimeout(function(){ window.cloudRefresh(); }, 500);
+  if(!timer) timer=setInterval(function(){ if(USER) window.cloudRefresh(false); }, 30000);
+  setTimeout(function(){ window.cloudRefresh(false); }, 800);
 })();
