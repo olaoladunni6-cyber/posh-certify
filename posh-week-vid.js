@@ -29,22 +29,19 @@ function showPlayer(){
   if(!app||document.getElementById("dmVid"))return;
   var box=document.createElement("div");
   box.className="card";
-  box.innerHTML="<h2>Walkthrough video</h2><div id=dmVid>Looking for video…</div><button type=button class=btn id=watched>I watched this video</button><p class=warn>Certify stays locked until this video is watched on this phone.</p>";
+  box.innerHTML="<h2>Walkthrough video</h2><div id=dmVid>Looking for video…</div><button type=button class=btn id=watched>I watched this video</button>";
   app.insertBefore(box, app.children[1]||null);
   getVid(r.id,function(blob){
     var el=document.getElementById("dmVid"); if(!el)return;
-    if(!blob){
-      el.innerHTML="<div class=warn>No video file on THIS phone. Use the housekeeper phone (same browser) to open this room, or record again on this device. Filename noted: "+(r.videoName||"none")+"</div>";
-      return;
-    }
+    if(!blob){ el.innerHTML="<div class=warn>No video on this phone. Watch on WhatsApp then tap I watched on WhatsApp.</div>"; return; }
     var url=URL.createObjectURL(blob);
     el.innerHTML="<video id=playV controls playsinline style='width:100%;background:#000' src='"+url+"'></video>";
     var v=document.getElementById("playV");
-    if(v) v.addEventListener("ended",function(){r.videoWatched=true;save();alert("Video finished — you may certify")});
+    if(v) v.addEventListener("ended",function(){r.videoWatched=true;save();});
   });
   var w=document.getElementById("watched");
   if(w) w.onclick=function(){
-    if(!document.getElementById("playV")){alert("Video is not on this phone. Cannot mark watched.");return}
+    if(!document.getElementById("playV")){alert("No local video — use I watched on WhatsApp");return}
     r.videoWatched=true;save();alert("Marked watched");
   };
 }
@@ -53,7 +50,8 @@ window.draw=function(){
   _draw();
   showPlayer();
   var inp=document.getElementById("oneVid");
-  if(inp){
+  if(inp && !inp.getAttribute("data-bound")){
+    inp.setAttribute("data-bound","1");
     inp.setAttribute("accept","video/*");
     inp.setAttribute("capture","environment");
     inp.onchange=function(){
@@ -61,8 +59,10 @@ window.draw=function(){
       var f=this.files&&this.files[0];
       if(!f)return;
       if(f.type && f.type.indexOf("video")!==0){alert("Must be a video");this.value="";return}
+      window.POSH_VID_FILE=f;
       room.videoReady=true; room.videoName=f.name; room.videoWatched=false;
-      putVid(room.id,f); save(); alert("Video stored for duty manager"); draw();
+      putVid(room.id,f); save();
+      alert("Video kept. Now tap Share / send video.");
     };
   }
   var c=document.getElementById("certify");
