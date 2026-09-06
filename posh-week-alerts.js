@@ -29,8 +29,8 @@
       "<p>Always-on push topic: <b>"+TOPIC+"</b></p>"+
       "<button type=button class=btn id=allowAlerts>Allow on-page alerts</button> "+
       "<button type=button class=btn id=testAlert>Test both</button>"+
-      "<p class=ok>For alerts when this page is closed: install the free <b>ntfy</b> app, tap Subscribe, topic <b>"+TOPIC+"</b>. Same topic on every staff phone.</p>"+
-      "<input id=ntfyTopic placeholder='Change topic if you want privacy' value='"+TOPIC+"'><button type=button class=btn id=saveTopic>Save topic</button></div>";
+      "<p class=ok>Kitchen must subscribe to this same topic in ntfy. Meal push shows name, room and meal — never the code.</p>"+
+      "<input id=ntfyTopic value='"+TOPIC+"'><button type=button class=btn id=saveTopic>Save topic</button></div>";
   }
   function inject(){
     var app=document.getElementById("app");
@@ -43,12 +43,11 @@
       if(navigator.serviceWorker) navigator.serviceWorker.register("sw.js");
     };
     var t=document.getElementById("testAlert");
-    if(t) t.onclick=function(){ pushOut("Posh Manager","Test push — if ntfy is subscribed this arrives with the page closed"); };
+    if(t) t.onclick=function(){ pushOut("Posh Manager","Test push including kitchen"); };
     var s=document.getElementById("saveTopic");
     if(s) s.onclick=function(){
       TOPIC=(document.getElementById("ntfyTopic").value||"").trim()||TOPIC;
       localStorage.setItem("posh-ntfy",TOPIC);
-      alert("Topic saved: "+TOPIC);
       draw();
     };
   }
@@ -69,6 +68,13 @@
     (DB.slips||[]).forEach(function(s){
       var k="s"+s.id+s.status; if(seen[k]) return; seen[k]=1;
       if(s.status==="sent") pushOut("HK linen in","Rm "+s.room+" item counts",k);
+    });
+    (DB.breakfasts||[]).forEach(function(b){
+      var k="bf"+(b.guest||"")+(b.room||"")+(b.day||"")+(b.status||"")+(b.meal||"");
+      if(seen[k]) return; seen[k]=1;
+      var line=(b.guest||"Guest")+" Rm "+(b.room||"-")+" · "+(b.meal||"")+" · "+(b.status||"waiting");
+      if(b.status==="served") pushOut("Breakfast served",line,k);
+      else pushOut("Breakfast allocated",line+" — kitchen verify with guest code",k);
     });
     (DB.msgs||[]).slice(-5).forEach(function(m){
       var k="m"+(m.at||"")+(m.text||""); if(seen[k]) return; seen[k]=1;
