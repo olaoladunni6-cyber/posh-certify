@@ -29,7 +29,7 @@
       "<p>Always-on push topic: <b>"+TOPIC+"</b></p>"+
       "<button type=button class=btn id=allowAlerts>Allow on-page alerts</button> "+
       "<button type=button class=btn id=testAlert>Test both</button>"+
-      "<p class=ok>Kitchen must subscribe to this same topic in ntfy. Meal push shows name, room and meal — never the code.</p>"+
+      "<p class=ok>Maintenance, kitchen and desk subscribe to the same ntfy topic.</p>"+
       "<input id=ntfyTopic value='"+TOPIC+"'><button type=button class=btn id=saveTopic>Save topic</button></div>";
   }
   function inject(){
@@ -43,7 +43,7 @@
       if(navigator.serviceWorker) navigator.serviceWorker.register("sw.js");
     };
     var t=document.getElementById("testAlert");
-    if(t) t.onclick=function(){ pushOut("Posh Manager","Test push including kitchen"); };
+    if(t) t.onclick=function(){ pushOut("Posh Manager","Test push including maintenance"); };
     var s=document.getElementById("saveTopic");
     if(s) s.onclick=function(){
       TOPIC=(document.getElementById("ntfyTopic").value||"").trim()||TOPIC;
@@ -75,6 +75,13 @@
       var line=(b.guest||"Guest")+" Rm "+(b.room||"-")+" · "+(b.meal||"")+" · "+(b.status||"waiting");
       if(b.status==="served") pushOut("Breakfast served",line,k);
       else pushOut("Breakfast allocated",line+" — kitchen verify with guest code",k);
+    });
+    (DB.issues||[]).forEach(function(i){
+      var k="is"+(i.id||"")+(i.room||"")+(i.status||"")+(i.fault||"");
+      if(seen[k]) return; seen[k]=1;
+      var line="Rm "+(i.room||"-")+" · "+(i.fault||"issue")+" · "+(i.status||"received")+(i.by?(" · by "+i.by):"");
+      if(i.status==="completed") pushOut("Maintenance completed",line,k);
+      else pushOut("Maintenance issue",line,k);
     });
     (DB.msgs||[]).slice(-5).forEach(function(m){
       var k="m"+(m.at||"")+(m.text||""); if(seen[k]) return; seen[k]=1;
