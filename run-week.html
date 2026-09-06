@@ -15,11 +15,14 @@
     try{
       var w=f.contentWindow;
       if(!w||!w.document||!w.document.body)return;
-      if(w.document.getElementById("poshVidGate"))return;
-      var s=w.document.createElement("script");
-      s.id="poshVidGate";
-      s.src="posh-week-vid.js?v=4";
-      w.document.body.appendChild(s);
+      function add(id,src){
+        if(w.document.getElementById(id))return;
+        var s=w.document.createElement("script");
+        s.id=id; s.src=src;
+        w.document.body.appendChild(s);
+      }
+      add("poshVidGate","posh-week-vid.js?v=4");
+      add("poshCloudGate","posh-week-cloud.js?v=5");
     }catch(e){}
   };
 })();
