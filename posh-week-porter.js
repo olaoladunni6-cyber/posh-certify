@@ -1,8 +1,18 @@
 (function(){
-  var INCHECK=["Door / keys work","Lights and AC work","No visible damage","No previous guest items","Bathroom ready","Certified room matches guest"];
+  var INCHECK=["Guest has paid — front desk confirmed","Door / keys work","Lights and AC work","No visible damage","No previous guest items","Bathroom ready","Certified room matches guest"];
   function liveGuest(num){
     return (DB.checkins||[]).filter(function(c){
       return String(c.room)===String(num) && c.kind!=="laundry" && !c.checkedOut;
+    }).pop();
+  }
+  function paymentFor(name,num){
+    name=String(name||"").toLowerCase();
+    return (DB.checkins||[]).filter(function(c){
+      if(c.kind==="laundry") return false;
+      var sameName=name && String(c.guest||"").toLowerCase()===name;
+      var sameRoom=num && String(c.room)===String(num);
+      var money=(Number(c.amount||0)+Number(c.paid||0))>0;
+      return money && (sameName || sameRoom);
     }).pop();
   }
   function confirms(){
@@ -32,7 +42,7 @@
     if(role()!=="porter" && role()!=="superadmin" && role()!=="manager") return h;
     var vacant=rooms().filter(function(r){ return r.status==="certified" && !liveGuest(r.number); });
     var inspect=rooms().filter(function(r){ return r.status==="inspect" || r.status==="pending"; });
-    h+="<div class=card><h2>Porter check-in</h2><p>Room check is part of check-in. All boxes required.</p>"+
+    h+="<div class=card><h2>Porter check-in</h2><p>Tick Guest has paid first. All boxes required.</p>"+
       "<input id=pName placeholder='Guest name'><select id=pRoom>"+vacant.map(function(r){return "<option>"+r.number+"</option>"}).join("")+"</select>"+
       "<input id=pOut type=date>"+
       INCHECK.map(function(t,i){return "<label><input type=checkbox class=inCk data-i='"+i+"'> "+t+"</label>";}).join("")+
@@ -61,15 +71,18 @@
       if(!name||!r){ alert("Guest and certified room required"); return; }
       var boxes=document.querySelectorAll(".inCk"); var ok=true;
       boxes.forEach(function(c){ if(!c.checked) ok=false; });
-      if(!boxes.length || !ok){ alert("Tick every check-in room check first"); return; }
+      if(!boxes.length || !ok){ alert("Tick every check-in item including Guest has paid"); return; }
+      var pay=paymentFor(name,num);
+      if(!pay){
+        if(!confirm("No payment folio found for this guest/room. Front desk should record payment first. Check in anyway?")) return;
+      }
       if(r.status!=="certified" || liveGuest(num)){ alert("Room is not vacant and certified"); return; }
       DB.checkins=DB.checkins||[];
-      DB.checkins.push({id:"ci"+Date.now(),guest:name,room:num,amount:0,checkout:out,site:USER.site,by:USER.name,day:today(),kind:"stay",checkedOut:false,porter:USER.name,porterChecked:true,inCheck:INCHECK.slice()});
+      DB.checkins.push({id:"ci"+Date.now(),guest:name,room:num,amount:pay?pay.amount:0,checkout:out,site:USER.site,by:USER.name,day:today(),kind:"stay",checkedOut:false,porter:USER.name,porterChecked:true,paidConfirmed:true,inCheck:INCHECK.slice()});
       DB.porterConfirms=DB.porterConfirms||[];
-      DB.porterConfirms.push({kind:"check-in",room:num,guest:name,by:USER.name,site:USER.site,at:now(),day:today(),note:"Check-in room check completed: "+INCHECK.join("; ")});
+      DB.porterConfirms.push({kind:"check-in",room:num,guest:name,by:USER.name,site:USER.site,at:now(),day:today(),note:"Paid confirmed. "+INCHECK.join("; ")});
       r.status="occupied"; r.guest=name; r.checkOut=out; r.porterCheck=USER.name;
-      if(typeof note==="function") note("Porter check-in check Rm "+num+" "+name);
-      save(); alert("Check-in complete. Room check recorded for Rm "+num); draw();
+      save(); alert("Check-in complete. Payment confirmed for Rm "+num); draw();
     };
     document.querySelectorAll(".pInsp").forEach(function(b){
       b.onclick=function(){
