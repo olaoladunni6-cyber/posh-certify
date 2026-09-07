@@ -39,7 +39,7 @@
   function mergeHotel(incoming){
     if(!incoming || typeof incoming!=="object") return;
     if(!DB) DB={};
-    var keys=["users","rooms","fixtures","fdChecks","fdClose","fdOut","lauItems","lauStock","lauMoves","martItems","martStock","martSales","slips","issues","scores","clocks","checkins","shifts","menus","breakfasts","queries","msgs","storeMoves","log","shiftReports","salesQueries","washServices","guestWashes","receipts","inspects","porterConfirms","wa"];
+    var keys=["users","rooms","fixtures","roomFx","fdChecks","fdClose","fdOut","lauItems","lauStock","lauMoves","martItems","martStock","martSales","slips","issues","scores","clocks","checkins","shifts","menus","breakfasts","queries","msgs","storeMoves","log","shiftReports","salesQueries","washServices","guestWashes","receipts","inspects","porterConfirms","wa"];
     keys.forEach(function(k){ if(incoming[k]!=null) DB[k]=incoming[k]; });
     try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
   }
