@@ -1,4 +1,5 @@
 (function(){
+  var INCHECK=["Door / keys work","Lights and AC work","No visible damage","No previous guest items","Bathroom ready","Certified room matches guest"];
   function liveGuest(num){
     return (DB.checkins||[]).filter(function(c){
       return String(c.room)===String(num) && c.kind!=="laundry" && !c.checkedOut;
@@ -20,7 +21,7 @@
   };
   function board(){
     var rows=confirms().slice(0,20).map(function(c){
-      return "<p><b>Rm "+c.room+"</b> · "+c.kind+" · "+(c.guest||"")+" · confirmed by "+c.by+" · "+(c.at||c.day)+" · "+(c.note||"")+"</p>";
+      return "<p><b>Rm "+c.room+"</b> · "+c.kind+" · "+(c.guest||"")+" · "+c.by+" · "+(c.at||c.day)+" · "+(c.note||"")+"</p>";
     }).join("")||"<p>No porter confirmations yet</p>";
     return "<div class=ok><h2>Porter room-check confirmations</h2>"+rows+"</div>";
   }
@@ -31,11 +32,11 @@
     if(role()!=="porter" && role()!=="superadmin" && role()!=="manager") return h;
     var vacant=rooms().filter(function(r){ return r.status==="certified" && !liveGuest(r.number); });
     var inspect=rooms().filter(function(r){ return r.status==="inspect" || r.status==="pending"; });
-    h+="<div class=card><h2>Porter check-in</h2>"+
+    h+="<div class=card><h2>Porter check-in</h2><p>Room check is part of check-in. All boxes required.</p>"+
       "<input id=pName placeholder='Guest name'><select id=pRoom>"+vacant.map(function(r){return "<option>"+r.number+"</option>"}).join("")+"</select>"+
       "<input id=pOut type=date>"+
-      "<label><input type=checkbox id=pConfirm> I checked this room (condition, keys, no damage)</label>"+
-      "<button type=button class=btn id=porterIn>Confirm and check guest in</button></div>";
+      INCHECK.map(function(t,i){return "<label><input type=checkbox class=inCk data-i='"+i+"'> "+t+"</label>";}).join("")+
+      "<button type=button class=btn id=porterIn>Complete check-in</button></div>";
     h+="<div class=card><h2>After check-out inspection</h2>";
     h+=inspect.map(function(r){
       return "<div class=card><b>Rm "+r.number+"</b> "+r.status+
@@ -58,17 +59,17 @@
       var out=(document.getElementById("pOut")&&document.getElementById("pOut").value)||"";
       var r=byNum(num);
       if(!name||!r){ alert("Guest and certified room required"); return; }
-      if(!(document.getElementById("pConfirm")&&document.getElementById("pConfirm").checked)){
-        alert("Tick I checked this room before check-in"); return;
-      }
+      var boxes=document.querySelectorAll(".inCk"); var ok=true;
+      boxes.forEach(function(c){ if(!c.checked) ok=false; });
+      if(!boxes.length || !ok){ alert("Tick every check-in room check first"); return; }
       if(r.status!=="certified" || liveGuest(num)){ alert("Room is not vacant and certified"); return; }
       DB.checkins=DB.checkins||[];
-      DB.checkins.push({id:"ci"+Date.now(),guest:name,room:num,amount:0,checkout:out,site:USER.site,by:USER.name,day:today(),kind:"stay",checkedOut:false,porter:USER.name,porterChecked:true});
+      DB.checkins.push({id:"ci"+Date.now(),guest:name,room:num,amount:0,checkout:out,site:USER.site,by:USER.name,day:today(),kind:"stay",checkedOut:false,porter:USER.name,porterChecked:true,inCheck:INCHECK.slice()});
       DB.porterConfirms=DB.porterConfirms||[];
-      DB.porterConfirms.push({kind:"check-in",room:num,guest:name,by:USER.name,site:USER.site,at:now(),day:today(),note:"Room checked and guest walked in"});
+      DB.porterConfirms.push({kind:"check-in",room:num,guest:name,by:USER.name,site:USER.site,at:now(),day:today(),note:"Check-in room check completed: "+INCHECK.join("; ")});
       r.status="occupied"; r.guest=name; r.checkOut=out; r.porterCheck=USER.name;
-      if(typeof note==="function") note("Porter confirmed Rm "+num+" "+name);
-      save(); alert("Confirmed: Rm "+num+" checked and guest in"); draw();
+      if(typeof note==="function") note("Porter check-in check Rm "+num+" "+name);
+      save(); alert("Check-in complete. Room check recorded for Rm "+num); draw();
     };
     document.querySelectorAll(".pInsp").forEach(function(b){
       b.onclick=function(){
@@ -86,7 +87,6 @@
           DB.issues.push({id:"i"+Date.now(),room:r.number,fault:"Damage after checkout: "+dmg,status:"received",site:USER.site,by:USER.name,at:now()});
         }
         r.status="pending"; r.guest=""; r.hk=""; r.hkName=""; r.videoReady=false; r.check=false; r.porterInspect=USER.name;
-        if(typeof note==="function") note("Porter confirmed inspect Rm "+r.number);
         save(); alert("Inspection confirmed for Rm "+r.number); draw();
       };
     });
