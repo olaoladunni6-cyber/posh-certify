@@ -1,49 +1,76 @@
 (function(){
   function penaltyOf(s){
-    var k=String(s.score||s.kind||"").toLowerCase();
+    var k=String(s.score||s.kind||s.r||"").toLowerCase();
     if(s.penalty!=null && s.penalty!=="") return Number(s.penalty)||0;
-    if(k==="unsatisfactory"||k==="return"||k==="returned") return 500;
-    if(k==="no salary"||k==="nosalary"||k==="no-pay") return 0;
+    if(k==="unsatisfactory"||k==="unsat"||k==="return"||k==="returned"||k==="rts") return 500;
     return 0;
+  }
+  function label(s){
+    var k=String(s.score||s.r||"").toLowerCase();
+    if(k==="sat"||k==="satisfactory") return "satisfactory";
+    if(k==="unsat"||k==="unsatisfactory") return "unsatisfactory";
+    if(k==="nosal"||k==="no salary"||k==="nosalary") return "no salary";
+    if(k==="return"||k==="returned"||k==="rts") return "return";
+    return s.score||s.r||"-";
   }
   function rows(){
     return (DB.scores||[]).filter(function(s){ return siteOk(s.site); }).slice().sort(function(a,b){
       return String(a.day||a.at||"").localeCompare(String(b.day||b.at||""));
     });
   }
-  window.viewPay=function(){
+  function page(){
     var list=rows();
     var run=0, by={};
     var body=list.map(function(s){
-      var p=penaltyOf(s);
-      run+=p;
+      var p=penaltyOf(s); run+=p;
       var hk=s.hk||s.name||s.who||"-";
-      by[hk]=by[hk]||{n:0,p:0,uns:0,ok:0,none:0};
-      by[hk].n++; by[hk].p+=p;
-      var k=String(s.score||"").toLowerCase();
-      if(k==="unsatisfactory"||k==="return") by[hk].uns++;
-      else if(k==="no salary") by[hk].none++;
+      by[hk]=by[hk]||{ok:0,uns:0,ret:0,none:0,p:0};
+      var lb=label(s);
+      if(lb==="unsatisfactory") by[hk].uns++;
+      else if(lb==="return") by[hk].ret++;
+      else if(lb==="no salary") by[hk].none++;
       else by[hk].ok++;
-      return "<tr><td>"+(s.day||(s.at||"").slice(0,10))+"</td><td>"+hk+"</td><td>"+(s.room||"-")+"</td><td>"+(s.score||"-")+"</td><td>"+(s.remark||s.note||"-")+"</td><td>"+(p?naira(p):"-")+"</td><td>"+naira(run)+"</td></tr>";
+      by[hk].p+=p;
+      return "<tr><td>"+(s.day||String(s.at||"").slice(0,10))+"</td><td>"+hk+"</td><td>"+(s.room||"-")+"</td><td>"+lb+"</td><td>"+(s.remark||s.note||"-")+"</td><td>"+(p?naira(p):"-")+"</td><td>"+naira(run)+"</td></tr>";
     }).join("")||"<tr><td colspan=7>No scores yet</td></tr>";
     var sum=Object.keys(by).map(function(n){
-      return "<tr><td colspan=2><b>"+n+"</td><td colspan=3>OK "+by[n].ok+" · Unsat "+by[n].uns+" · No salary "+by[n].none+"</td><td colspan=2><b>"+naira(by[n].p)+"</b></td></tr>";
+      return "<tr><td colspan=2><b>"+n+"</b></td><td colspan=3>Satisfactory "+by[n].ok+" · Unsatisfactory "+by[n].uns+" · Returns "+by[n].ret+" · No salary "+by[n].none+"</td><td colspan=2><b>"+naira(by[n].p)+"</b></td></tr>";
     }).join("");
     var form="";
-    if(role()==="manager"||role()==="superadmin"){
-      var hks=(DB.users||[]).filter(function(u){return u.role==="housekeeper"&&siteOk(u.site);});
-      form="<div class=card><h2>Score housekeeper</h2><select id=scHk>"+hks.map(function(u){return "<option value='"+u.name+"'>"+u.name+"</option>"}).join("")+"</select>"+
-        "<input id=scRm placeholder='Room'><select id=scVal><option>satisfactory</option><option>unsatisfactory</option><option>no salary</option></select>"+
-        "<input id=scRk placeholder='Remark'><button type=button class=btn id=saveScore>Save score</button><p>Unsatisfactory = ₦500 penalty. No salary = day not paid (listed, penalty 0 here).</p></div>";
+    if(role()==="manager"||role()==="superadmin"||role()==="ceo"){
+      var listHk=(typeof hks==="function"?hks():[]);
+      form="<div class=card><h2>Score housekeeper (duty manager)</h2>"+
+        "<select id=scHk>"+listHk.map(function(u){return "<option value='"+u.name+"'>"+u.name+"</option>";}).join("")+"</select>"+
+        "<input id=scRm placeholder='Room number'>"+
+        "<select id=scVal><option value='satisfactory'>Satisfactory — full pay</option><option value='unsatisfactory'>Unsatisfactory — ₦500</option><option value='return'>Return / reclean — ₦500</option><option value='no salary'>No salary — day not paid</option></select>"+
+        "<input id=scRk placeholder='Remark (required for unsat / return / no salary)'>"+
+        "<button type=button class=btn id=saveScore>Save score</button>"+
+        "<p>Satisfactory = full day pay. Unsatisfactory or each return = ₦500. Abandoned / incomplete = no salary for that day.</p></div>";
     }
     return "<h1>Housekeeper scores</h1>"+form+
       "<div class=card style='overflow:auto'><table style='width:100%;border-collapse:collapse;font-size:13px'>"+
-      "<tr><th style='text-align:left'>Date</th><th>Housekeeper</th><th>Room</th><th>Score</th><th>Remark</th><th>Penalty</th><th>Cumulative</th></tr>"+
+      "<tr><th align=left>Date</th><th>Housekeeper</th><th>Room</th><th>Score</th><th>Remark</th><th>Penalty</th><th>Cumulative</th></tr>"+
       body+
-      "<tr><td colspan=5><b>Total penalties</b></td><td colspan=2><b>"+naira(run)+"</b></td></tr>"+
-      sum+
-      "</table></div>";
-  };
+      "<tr><td colspan=5><b>Total penalties to date</b></td><td colspan=2><b>"+naira(run)+"</b></td></tr>"+
+      sum+"</table></div>";
+  }
+  window.viewScore=page;
+  window.viewPay=page;
+  function addScore(hk,room,sc,remark){
+    var lb=String(sc||"").toLowerCase();
+    if(lb==="sat") lb="satisfactory";
+    if(lb==="unsat") lb="unsatisfactory";
+    if(lb==="nosal") lb="no salary";
+    if(lb==="rts") lb="return";
+    if((lb==="unsatisfactory"||lb==="return"||lb==="no salary") && !(remark||"").trim()){
+      remark=prompt("Remark for "+lb,"")||"";
+    }
+    var pen=(lb==="unsatisfactory"||lb==="return")?500:0;
+    DB.scores=DB.scores||[];
+    DB.scores.push({hk:hk,room:room||"",score:lb,remark:remark||"",penalty:pen,day:today(),at:now(),site:USER.site,by:USER.name});
+    if(typeof note==="function") note("HK score "+hk+" "+lb+(pen?(" ₦"+pen):"")+" "+(remark||""));
+    save();
+  }
   var _bind=window.bind;
   window.bind=function(){
     if(typeof _bind==="function") _bind();
@@ -54,24 +81,26 @@
       var rm=(document.getElementById("scRm").value||"").trim();
       var rk=(document.getElementById("scRk").value||"").trim();
       if(!hk){ alert("Pick housekeeper"); return; }
-      var pen=sc==="unsatisfactory"?500:0;
-      DB.scores=DB.scores||[];
-      DB.scores.push({hk:hk,room:rm,score:sc,remark:rk,penalty:pen,day:today(),at:now(),site:USER.site,by:USER.name});
-      save(); alert(hk+" — "+sc+(pen?(" ₦"+pen):"")); draw();
+      if((sc==="unsatisfactory"||sc==="return"||sc==="no salary") && !rk){ alert("Remark required"); return; }
+      addScore(hk,rm,sc,rk);
+      alert(hk+" — "+sc+(sc==="unsatisfactory"||sc==="return"?" ₦500":""));
+      draw();
     };
-    document.querySelectorAll(".score").forEach(function(btn){
+    document.querySelectorAll(".sc").forEach(function(btn){
+      btn.onclick=function(){
+        var id=btn.getAttribute("data-id");
+        var r=btn.getAttribute("data-r");
+        var u=(DB.users||[]).filter(function(x){return x.id===id;})[0];
+        addScore(u?u.name:id,"",r,"");
+        draw();
+      };
+    });
+    document.querySelectorAll("#rts").forEach(function(btn){
       var prev=btn.onclick;
       btn.onclick=function(ev){
-        var remark=prompt("Remark for this score","")||"";
-        var sc=btn.getAttribute("data-s");
-        var rid=btn.getAttribute("data-id");
-        var r=findRoom(rid);
-        var pen=sc==="unsatisfactory"?500:0;
-        DB.scores=DB.scores||[];
-        DB.scores.push({hk:r&&r.hkName||"",room:r&&r.number||"",score:sc,remark:remark,penalty:pen,day:today(),at:now(),site:USER.site,by:USER.name});
-        save();
-        if(typeof prev==="function") try{ prev.call(btn,ev); }catch(e){}
-        draw();
+        var r=findRoom(ROOM);
+        addScore(r&&r.hkName||"",r&&r.number||"","return","Returned for reclean");
+        if(typeof prev==="function") prev.call(btn,ev);
       };
     });
   };
